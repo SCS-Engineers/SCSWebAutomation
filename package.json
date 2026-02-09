@@ -1,0 +1,37 @@
+{
+  "name": "playwright-pom-project",
+  "version": "1.0.0",
+  "description": "Playwright project with Page Object Model",
+  "main": "index.js",
+  "scripts": {
+    "pretest": "rimraf allure-results",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "clean": "rimraf allure-results allure-report playwright-report test-results",
+    "clean:allure": "rimraf allure-results allure-report",
+    "test:clean": "npm run clean:allure && playwright test",
+    "report": "playwright show-report",
+    "report:pdf": "node utils/exportReportToPdf.js",
+    "allure:generate": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "allure:report": "npm run allure:generate && npm run allure:open",
+    "allure:pdf": "npm run allure:generate && node utils/exportAllureToPdf.js"
+  },
+  "keywords": [
+    "playwright",
+    "automation",
+    "testing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "1.40.0",
+    "allure-commandline": "2.36.0",
+    "allure-playwright": "3.4.4",
+    "dotenv": "17.2.3",
+    "rimraf": "6.1.2",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  }
+}

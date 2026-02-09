@@ -1,0 +1,64 @@
+{
+  "users": {
+    "validUser": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV",
+      "firstName": "Peter",
+      "lastName": "User"
+    },
+    "nonApplicableUser": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV"
+    },
+    "noAccessUser": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV"
+    },
+    "invalidUsername": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV"
+    },
+    "invalidPassword": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV"
+    },
+    "invalidBoth": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV"
+    }
+  },
+  "testUrls": {
+    "loginPage": "PLACEHOLDER_USE_ENV",
+    "homePage": "PLACEHOLDER_USE_ENV"
+  },
+  "testData": {
+    "searchKeyword": "Playwright",
+    "productName": "Test Product",
+    "quantity": 2,
+    "changePassword": {
+      "initialPassword": "PLACEHOLDER_USE_ENV",
+      "newPassword": "PLACEHOLDER_USE_ENV",
+      "invalidPassword": "PLACEHOLDER_USE_ENV"
+    },
+    "siteStatusDashboard": {
+      "initialSite": "00_Site01",
+      "searchTerm": "Demo Site",
+      "targetSite": "Demo Site",
+      "expectedMapUrl": "filter-map",
+      "mapIconClass": "e-btn-icon e-custom-common-grid-map e-icons",
+      "toolbarItemClass": "ng-tns-c944827563-1 e-toolbar-item",
+      "contactIconClass": "e-btn-icon e-custom-common-contacts e-icons",
+      "expectedPopupTitle": "Site Contacts for site: site-single",
+      "expectedTabs": ["DATA APPROVERS", "USERS WITH ACCESS", "CONTACTS"],
+      "dataApproversColumns": ["First", "Last", "Title", "Employer", "Phone #", "Mobile #", "Email", "Address", "City", "ST", "Zip", "Last Logon"],
+      "usersWithAccessColumns": ["First", "Last", "Title", "Employer", "Phone #", "Mobile #", "Email", "Address", "City", "ST", "Zip", "Last Logon"],
+      "contactsColumns": ["Business Role", "First", "Last", "Title", "Employer", "Phone #", "Mobile #", "Email", "Address", "City", "ST", "Zip", "Last Logon"],
+      "tabLabels": {
+        "dataApprovers": "Data Approvers",
+        "usersWithAccess": "Users With Access",
+        "contacts": "Contacts"
+      },
+      "dateTimePattern": "^[A-Z][a-z]{2} \\d{2}, \\d{4} \\d{1,2}:\\d{2} (AM|PM)$"
+    }
+  }
+}
