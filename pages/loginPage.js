@@ -38,6 +38,7 @@ class LoginPage extends BasePage {
   /**
    * Enter username
    * @param {string} username - Username to enter
+   * @returns {Promise<void>}
    */
   async enterUsername(username) {
     this.logger.info(`Entering username: ${username}`);
@@ -47,6 +48,7 @@ class LoginPage extends BasePage {
   /**
    * Enter password
    * @param {string} password - Password to enter
+   * @returns {Promise<void>}
    */
   async enterPassword(password) {
     this.logger.info('Entering password: ********');
@@ -55,6 +57,7 @@ class LoginPage extends BasePage {
 
   /**
    * Click login button
+   * @returns {Promise<void>}
    */
   async clickLoginButton() {
     this.logger.info('Clicking login button');
@@ -65,6 +68,7 @@ class LoginPage extends BasePage {
    * Perform complete login
    * @param {string} username - Username
    * @param {string} password - Password
+   * @returns {Promise<void>}
    */
   async login(username, password) {
     this.logger.step(`Performing login with username: ${username}`);
@@ -93,6 +97,7 @@ class LoginPage extends BasePage {
 
   /**
    * Click remember me checkbox
+   * @returns {Promise<void>}
    */
   async clickRememberMe() {
     await this.check(this.rememberMeCheckbox);
@@ -100,6 +105,7 @@ class LoginPage extends BasePage {
 
   /**
    * Click forgot password link
+   * @returns {Promise<void>}
    */
   async clickForgotPassword() {
     await this.click(this.forgotPasswordLink);

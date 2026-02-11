@@ -1,17 +1,22 @@
 const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+const logger = require('./logger');
 
-async function exportReportToPdf() {
+/**
+ * Export Beautiful Report to PDF
+ * @returns {Promise<void>}
+ */
+const exportReportToPdf = async () => {
   const reportPath = path.join(__dirname, '..', 'beautiful-report', 'index.html');
   
   // Check if report exists
   if (!fs.existsSync(reportPath)) {
-    console.error('❌ Report not found. Please run tests first: npm test');
+    logger.error('❌ Report not found. Please run tests first: npm test');
     process.exit(1);
   }
 
-  console.log('📊 Converting Beautiful Report to PDF...');
+  logger.info('📊 Converting Beautiful Report to PDF...');
   
   const browser = await chromium.launch();
   const page = await browser.newPage();
@@ -38,7 +43,10 @@ async function exportReportToPdf() {
   
   await browser.close();
   
-  console.log(`✅ PDF report generated successfully: ${pdfPath}`);
-}
+  logger.info(`✅ PDF report generated successfully: ${pdfPath}`);
+};
 
-exportReportToPdf().catch(console.error);
+exportReportToPdf().catch((error) => {
+  logger.error(`Failed to export PDF report: ${error.message}`);
+  process.exit(1);
+});

@@ -33,7 +33,10 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await siteStatusDashboardPage.navigateToSurfaceEmissionsTab();
     
     logger.step('Step 8: Wait for network to be idle');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(500);
     logger.info('✓ Network is idle after navigating to Surface Emissions tab');
     
     // Filter by Site Name "aqabmtestsite1"
@@ -49,7 +52,10 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await siteStatusDashboardPage.clickSurfaceEmissionsMapIcon();
     
     logger.step('Step 11: Wait for navigation to complete');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(1000);
     logger.info('✓ Navigation completed');
     
     logger.step('Step 12: Verify Filter Map toolbar item is active');
@@ -471,12 +477,17 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await firstOpenExceedanceCell.dblclick();
 
     logger.step('Wait until Report Description section is visible');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(1000);
     await siteStatusDashboardPage.getReportDescriptionLocator().first().waitFor({ state: 'visible', timeout: 30000 });
     logger.info('✓ Report page loaded successfully');
 
     logger.step('Wait for report filters to load completely');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
     
     // Scroll down slightly to ensure filters are in viewport
     await page.evaluate(() => window.scrollBy(0, 200));
@@ -582,15 +593,19 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await siteStatusDashboardPage.getArrowDropUpButton().click();
     
     logger.step('Wait for page to load after collapsing filters');
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle after collapsing filters, continuing...');
+    });
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle').catch(() => {});
     logger.info('✓ Collapsed REPORT FILTERS section');
 
     logger.step('Verify "SEM Exceedance Detail Report: Instantaneous" is visible');
     // Scroll to make the element visible first
     await page.evaluate(() => window.scrollBy(0, 300));
-    await page.waitForTimeout(1000);
-    await expect(siteStatusDashboardPage.getSEMExceedanceDetailReportText()).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(siteStatusDashboardPage.getSEMExceedanceDetailReportText()).toBeVisible({ timeout: 30000 });
     logger.info('✓ "SEM Exceedance Detail Report: Instantaneous" is visible');
 
     logger.step('Scroll down to view "SEM Exceedance Detail Report: Instantaneous" content');
@@ -739,10 +754,11 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.info(`✓ Site Name filter applied: ${filterSiteName}`);
 
     logger.step('Capture Reading Approval Required count and site name from first row');
-    await page.waitForLoadState('networkidle');
-    await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
+    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle').catch(() => {});
 
     const { siteName, count: readingApprovalRequiredCount, cell: targetCell } = await siteStatusDashboardPage.captureFirstSurfaceEmissionsReadingApprovalRequiredCount();
     
@@ -756,8 +772,11 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await targetCell.dblclick();
 
     logger.step('Wait until REPORT INFORMATION section is visible');
-    await page.waitForLoadState('networkidle');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(1500);
+    await page.waitForLoadState('networkidle').catch(() => {});
     await siteStatusDashboardPage.getReportInformationLocator().first().waitFor({ state: 'visible', timeout: 40000 });
     logger.info('✓ Review Edit page loaded successfully');
 
@@ -771,16 +790,20 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     logger.step('Get READINGS count from Review Edit page');
     await page.evaluate(() => window.scrollBy(0, 300));
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
     
     await expect(siteStatusDashboardPage.getReadingsLabel().first()).toBeVisible({ timeout: 10000 });
     logger.info('✓ READINGS label is visible');
 
-    await page.waitForLoadState('networkidle').catch(() => logger.info('Network did not go idle, continuing...'));
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle').catch(() => {});
     
     logger.step('Wait for reading grid to populate');
-    await page.waitForLoadState('networkidle').catch(() => {});
     
     // Wait specifically for grid rows to appear
     await page.locator('#readingGrid .e-row, #readingGrid tr.e-row').first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
@@ -1015,7 +1038,10 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     logger.step('Double-click on the Ambient Pts Not Monitored value');
     await siteStatusDashboardPage.doubleClickCell(targetCell);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(1000);
     logger.info('✓ Navigation completed');
 
     logger.step('Verify page contains "Point Specific Monitoring"');

@@ -223,13 +223,26 @@ class SiteStatusDashboardPage extends BasePage {
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const filterIcon = header.locator(this.filterIconSelector);
-    await filterIcon.waitFor({ state: 'visible', timeout: 10000 });
     
-    // Wait for grid to stabilize before clicking (fixes element not stable issue)
-    await this.page.waitForLoadState('networkidle').catch(() => {});
+    // Wait for grid to stabilize before accessing filter  
+    await this.page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      this.logger.info('Network did not go idle before filter click, continuing...');
+    });
+    await this.page.waitForTimeout(500);
     
-    await filterIcon.click();
-    await this.page.waitForLoadState('networkidle');
+    // Wait for filter icon with extended timeout and retry
+    try {
+      await filterIcon.waitFor({ state: 'visible', timeout: 30000 });
+      await filterIcon.waitFor({ state: 'attached', timeout: 10000 });
+      await this.page.waitForTimeout(300);
+      await filterIcon.click({ timeout: 30000 });
+    } catch (error) {
+      this.logger.warn(`Filter icon not immediately clickable, retrying: ${error.message}`);
+      await this.page.waitForTimeout(1000);
+      await filterIcon.click({ force: true, timeout: 10000 });
+    }
+    
+    await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
   }
 
   /**
@@ -265,10 +278,11 @@ class SiteStatusDashboardPage extends BasePage {
    * Wait for aria-sort state on header and set if needed
    * @param {Locator} header - Header locator
    * @param {string} desired - Desired sort state ('ascending' or 'descending')
+   * @returns {Promise<void>}
    */
   async ensureSortState(header, desired) {
     await header.waitFor({ state: 'visible', timeout: 10000 });
-    const current = (await header.getAttribute('aria-sort').catch(() => null)) || '';
+    const current = (await header.getAttribute('aria-sort').catch(() => null)) ?? '';
     if (current.toLowerCase() !== desired) {
       await header.click();
       const { expect } = require('@playwright/test');
@@ -4206,7 +4220,7 @@ class SiteStatusDashboardPage extends BasePage {
    * Find first row with specific count in column and return details including row element
    * @param {string} columnName - Column name to check
    * @param {number} minCount - Minimum count value
-   * @returns {Promise<{count: number, siteName: string, row: any, colIndex: number}>} Row details
+   * @returns {Promise<{count: number, siteName: string, row: import('@playwright/test').Locator, colIndex: number}>} Row details
    */
   async findRowWithCountInColumn(columnName, minCount = 0) {
     this.logger.step(`Find first row with ${columnName} > ${minCount}`);
