@@ -27,10 +27,10 @@ class Helper {
   /**
    * Wait for specified milliseconds
    * @param {number} ms - Milliseconds to wait
-   * @returns {Promise}
+   * @returns {Promise<void>}
    */
   async wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

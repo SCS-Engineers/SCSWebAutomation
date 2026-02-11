@@ -20,6 +20,7 @@ class TestSetup {
   /**
    * Initialize page objects and navigate to login page
    * @param {Page} page - Playwright page object
+   * @returns {Promise<void>}
    */
   async initialize(page) {
     logger.divider();
@@ -42,7 +43,7 @@ class TestSetup {
 
   /**
    * Login as valid user
-   * @returns {Object} User credentials object
+   * @returns {Promise<{username: string, password: string}>} User credentials object
    */
   async loginAsValidUser() {
     const { username, password, ...userDetails } = credentials.getUserCredentials('validUser');
@@ -53,6 +54,7 @@ class TestSetup {
 
   /**
    * Acknowledge Health and Safety modal
+   * @returns {Promise<void>}
    */
   async acknowledgeHealthAndSafety() {
     logger.step('Acknowledge Health & Safety modal');

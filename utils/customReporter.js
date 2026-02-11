@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const logger = require('./logger');
 
 class CustomHTMLReporter {
   constructor(options = {}) {
@@ -40,7 +41,7 @@ class CustomHTMLReporter {
     const reportPath = path.join(this.outputFolder, 'index.html');
     fs.writeFileSync(reportPath, html);
     
-    console.log(`\n📊 Custom HTML Report generated: ${reportPath}`);
+    logger.info(`\n📊 Custom HTML Report generated: ${reportPath}`);
   }
 
   calculateStats() {
@@ -327,7 +328,6 @@ class CustomHTMLReporter {
 
     <script>
         // Optional: Add any interactive features here
-        console.log('Test Report loaded successfully');
     </script>
 </body>
 </html>`;

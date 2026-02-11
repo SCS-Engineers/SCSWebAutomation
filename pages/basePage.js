@@ -55,6 +55,7 @@ class BasePage {
   /**
    * Click on an element
    * @param {string} selector - Element selector
+   * @returns {Promise<void>}
    */
   async click(selector) {
     this.logger.action(`Clicking on element`, selector);
@@ -66,6 +67,7 @@ class BasePage {
    * Fill input field
    * @param {string} selector - Element selector
    * @param {string} text - Text to fill
+   * @returns {Promise<void>}
    */
   async fill(selector, text) {
     this.logger.action(`Filling text in element`, selector);
@@ -101,6 +103,7 @@ class BasePage {
    * Wait for element to be visible
    * @param {string} selector - Element selector
    * @param {number} timeout - Timeout in milliseconds
+   * @returns {Promise<void>}
    */
   async waitForElement(selector, timeout = 30000) {
     this.logger.action(`Waiting for element to be visible`, selector);
@@ -112,6 +115,7 @@ class BasePage {
    * Wait for navigation
    * @param {string} state - Load state to wait for: 'load', 'domcontentloaded', or 'networkidle' (default: 'networkidle')
    * @param {number} timeout - Optional timeout in milliseconds
+   * @returns {Promise<void>}
    */
   async waitForNavigation(state = 'networkidle', timeout = 60000) {
     this.logger.action(`Waiting for page load state: ${state}`);
@@ -122,6 +126,7 @@ class BasePage {
   /**
    * Take screenshot
    * @param {string} name - Screenshot name
+   * @returns {Promise<void>}
    */
   async takeScreenshot(name) {
     this.logger.action(`Taking screenshot: ${name}`);
@@ -157,6 +162,7 @@ class BasePage {
    * Select option from dropdown
    * @param {string} selector - Element selector
    * @param {string} value - Option value
+   * @returns {Promise<void>}
    */
   async selectOption(selector, value) {
     await this.page.selectOption(selector, value);
@@ -165,6 +171,7 @@ class BasePage {
   /**
    * Check checkbox
    * @param {string} selector - Element selector
+   * @returns {Promise<void>}
    */
   async check(selector) {
     await this.page.check(selector);
@@ -173,6 +180,7 @@ class BasePage {
   /**
    * Uncheck checkbox
    * @param {string} selector - Element selector
+   * @returns {Promise<void>}
    */
   async uncheck(selector) {
     await this.page.uncheck(selector);
@@ -181,6 +189,7 @@ class BasePage {
   /**
    * Hover over element
    * @param {string} selector - Element selector
+   * @returns {Promise<void>}
    */
   async hover(selector) {
     await this.page.hover(selector);
@@ -189,6 +198,7 @@ class BasePage {
   /**
    * Double click on element
    * @param {string} selector - Element selector
+   * @returns {Promise<void>}
    */
   async doubleClick(selector) {
     await this.page.dblclick(selector);
@@ -197,6 +207,7 @@ class BasePage {
   /**
    * Right click on element
    * @param {string} selector - Element selector
+   * @returns {Promise<void>}
    */
   async rightClick(selector) {
     await this.page.click(selector, { button: 'right' });
@@ -205,6 +216,7 @@ class BasePage {
   /**
    * Wait for specified time
    * @param {number} timeout - Time in milliseconds
+   * @returns {Promise<void>}
    */
   async wait(timeout) {
     this.logger.info(`Waiting for ${timeout}ms`);
@@ -213,6 +225,7 @@ class BasePage {
 
   /**
    * Reload page
+   * @returns {Promise<void>}
    */
   async reload() {
     await this.page.reload();
@@ -220,6 +233,7 @@ class BasePage {
 
   /**
    * Go back in browser history
+   * @returns {Promise<void>}
    */
   async goBack() {
     await this.page.goBack();

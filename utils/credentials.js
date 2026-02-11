@@ -3,6 +3,7 @@ require('dotenv').config();
 
 // Load test data from JSON file
 const testData = require('../data/testData.json');
+const logger = require('./logger');
 
 /**
  * Credentials Manager - Secure credential handling using environment variables
@@ -16,19 +17,20 @@ const testData = require('../data/testData.json');
  * @param {boolean} warnIfMissing - Whether to log warning if missing (default: false)
  * @returns {*} Environment variable value or fallback
  */
-function getEnvVar(key, fallback = null, warnIfMissing = false) {
+const getEnvVar = (key, fallback = null, warnIfMissing = false) => {
   const value = process.env[key];
+  
   if (value === undefined || value === '') {
-    if (fallback !== null) {
-      return fallback;
-    }
+    if (fallback !== null) return fallback;
+    
     if (warnIfMissing) {
-      console.warn(`Warning: Environment variable ${key} is not set. Using fallback from testData.json if available.`);
+      logger.warn(`Environment variable ${key} is not set. Using fallback from testData.json if available.`);
     }
     return null;
   }
+  
   return value;
-}
+};
 
 /**
  * Build user credentials object from environment variables with fallback
@@ -36,14 +38,12 @@ function getEnvVar(key, fallback = null, warnIfMissing = false) {
  * @param {Object} fallback - Fallback user object from testData.json
  * @returns {Object} User credentials object
  */
-function buildUserCredentials(prefix, fallback = {}) {
-  return {
-    username: getEnvVar(`${prefix}_USERNAME`, fallback.username, true),
-    password: getEnvVar(`${prefix}_PASSWORD`, fallback.password, true),
-    firstName: getEnvVar(`${prefix}_FIRSTNAME`, fallback.firstName, false),
-    lastName: getEnvVar(`${prefix}_LASTNAME`, fallback.lastName, false)
-  };
-}
+const buildUserCredentials = (prefix, fallback = {}) => ({
+  username: getEnvVar(`${prefix}_USERNAME`, fallback.username, true),
+  password: getEnvVar(`${prefix}_PASSWORD`, fallback.password, true),
+  firstName: getEnvVar(`${prefix}_FIRSTNAME`, fallback.firstName, false),
+  lastName: getEnvVar(`${prefix}_LASTNAME`, fallback.lastName, false)
+});
 
 // Build users object with environment variables taking precedence
 const users = {
@@ -72,8 +72,8 @@ const enhancedTestData = {
 };
 
 module.exports = {
-  users: users,
-  testUrls: testUrls,
+  users,
+  testUrls,
   testData: enhancedTestData,
 
   /**

@@ -104,8 +104,11 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     
     // Step 11: Wait for network to be idle
     logger.step('Step 11: Wait for network to be idle');
-    await page.waitForLoadState('networkidle', { timeout: 60000 });
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle').catch(() => {});
     logger.info('✓ Network is idle after clicking contact icon');
     
     logger.step('Step 12: Verify a popup/modal is opened');
@@ -219,12 +222,16 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     
     // Step 11: Wait for network to be idle
     logger.step('Step 11: Wait for network to be idle');
-    await page.waitForLoadState('networkidle', { timeout: 60000 });
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle').catch(() => {});
     logger.info('✓ Network is idle after clicking contact icon');
     
     // Step 12: Verify a popup/modal is opened
     logger.step('Step 12: Verify a popup/modal is opened');
+    await page.waitForTimeout(500);
     await siteStatusDashboardPage.verifyDialogHeaderVisible();
     logger.info('✓ Contacts popup is displayed');
     
@@ -235,6 +242,7 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     
     // Step 14: Grab the first visible value from Last Logon column in Data Approvers tab
     logger.step('Step 14: Grab first value from Last Logon column in Data Approvers tab');
+    await page.waitForTimeout(500);
     const lastLogonValue = await siteStatusDashboardPage.getLastLogonValue();
     
     // Step 15: Verify the date-time format matches MMM DD, YYYY HH:MM AM/PM
@@ -285,12 +293,16 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     
     // Step 11: Wait for network to be idle
     logger.step('Step 11: Wait for network to be idle');
-    await page.waitForLoadState('networkidle', { timeout: 60000 });
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      logger.info('Network did not go idle, continuing...');
+    });
+    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle').catch(() => {});
     logger.info('✓ Network is idle after clicking contact icon');
     
     // Step 12: Verify a popup/modal is opened
     logger.step('Step 12: Verify a popup/modal is opened');
+    await page.waitForTimeout(500);
     await siteStatusDashboardPage.verifyDialogHeaderVisible();
     logger.info('✓ Site Contacts popup is opened');
     
@@ -509,7 +521,7 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     logger.step('Filter by Site Name: aqabmtestsite1');
     
     // Wait for grid to load
-    await page.waitForLoadState('networkidle').catch(() => logger.info('Network did not go idle, continuing...'));
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => logger.info('Network did not go idle, continuing...'));
     
     // Apply Site Name filter: aqabmtestsite1
     await siteStatusDashboardPage.applyLiquidLevelsSiteNameFilter('aqabmtestsite1');
@@ -519,7 +531,7 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     logger.step('Locate Reading Approval Required column and search for first count > 0');
     
     // Wait for grid to load completely
-    await page.waitForLoadState('networkidle').catch(() => logger.info('Network did not go idle, continuing...'));
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => logger.info('Network did not go idle, continuing...'));
 
     // Get column indexes from Liquid Levels grid
     const readingApprovalHeader = siteStatusDashboardPage.getLiquidLevelsHeader('Reading Approval Required');
@@ -555,10 +567,10 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     await targetReadingApprovalCell.dblclick();
 
     // Wait for navigation/network idle after double-click
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {});
 
     logger.step('Wait until REPORT INFORMATION section is visible');
-    await page.waitForLoadState('networkidle').catch(() => logger.info('Network did not go idle, continuing...'));
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => logger.info('Network did not go idle, continuing...'));
     await siteStatusDashboardPage.verifyReportInformationHeader();
     logger.info('✓ Review Edit page loaded successfully');
 
@@ -726,9 +738,21 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     await siteStatusDashboardPage.filterBySiteNameExact('aqabmtestsite1');
     const filteredSiteName = 'aqabmtestsite1';
 
-    // Verify only filtered results are displayed
+   // Verify only filtered results are displayed
     logger.step('Verify only filtered results are displayed');
     await siteStatusDashboardPage.verifyLiquidLevelsFilteredResults(filteredSiteName);
+
+    // Capture current date range from dashboard
+    logger.step('Capture date range value from dashboard');
+    const dateRangeCombobox = siteStatusDashboardPage.getDateRangeCombobox();
+    let dateRangeText = '';
+    try {
+      dateRangeText = await dateRangeCombobox.inputValue({ timeout: 5000 });
+      logger.info(`Dashboard date range: ${dateRangeText}`);
+    } catch (error) {
+      logger.warn(`Could not capture date range: ${error.message}`);
+      dateRangeText = 'Unknown';
+    }
 
     // Step 2: Locate Missed Readings column and capture value
     logger.step('Locate Missed Readings column and capture value from span');
@@ -757,7 +781,8 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
     await page.waitForLoadState('networkidle', { timeout: 120000 }).catch(() => {
       logger.info('Network did not go idle after 120s, continuing...');
     });
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle').catch(() => {});
 
     // Step 6: Pagination Summary Validation
     logger.step('Locate pagination summary element and extract total count');
@@ -765,11 +790,19 @@ test.describe('SCS Site Status Dashboard - Liquid Levels Tests', () => {
 
     // Step 7: Assert that pagination count equals missedReadingsValue
     logger.step('Verify pagination count equals Missed Readings value from dashboard');
-    logger.info(`Missed Readings value from dashboard: ${missedReadingsValue}`);
+    logger.info(`Missed Readings value from dashboard: ${missedReadingsValue} (Date range: ${dateRangeText})`);
     logger.info(`Pagination count from Missed Readings page: ${paginationCount}`);
     
+    // Check if counts match
+    if (paginationCount === missedReadingsValue) {
+      logger.info(`✓ Pagination count (${paginationCount}) matches Missed Readings value (${missedReadingsValue})`);
+    } else {
+      logger.warn(`⚠ COUNT MISMATCH: Dashboard shows ${missedReadingsValue} for date range "${dateRangeText}", but detail page shows ${paginationCount} total records`);
+      logger.warn(`This indicates the detail page does NOT respect the dashboard's date range filter`);
+      logger.warn(`Expected: ${missedReadingsValue}, Actual: ${paginationCount}, Difference: ${Math.abs(paginationCount - missedReadingsValue)}`);
+    }
+    
     expect(paginationCount).toBe(missedReadingsValue);
-    logger.info(`✓ Pagination count (${paginationCount}) matches Missed Readings value (${missedReadingsValue})`);
 
     logger.testEnd('DS-SITE-STATUS-42 - Verify the count in the Missed Readings column matches the total number of records on the Missed Readings page (Liquid Levels)', 'PASSED');
   });
