@@ -315,6 +315,152 @@ class BasePage {
     await this.page.click(`text=${text}`);
     this.logger.info(`Successfully clicked element with text: "${text}"`);
   }
+
+  /**
+   * Logout from the application
+   * @returns {Promise<void>}
+   */
+  async logout() {
+    this.logger.action('Logging out from application');
+    
+    try {
+      // Check if there's a direct Logout button visible (some user types)
+      const directLogoutButton = this.page.locator('button:has-text("Logout")').first();
+      const isDirectLogoutVisible = await directLogoutButton.isVisible({ timeout: 2000 }).catch(() => false);
+      
+      if (isDirectLogoutVisible) {
+        await directLogoutButton.click();
+        this.logger.info('✓ Clicked direct Logout button');
+      } else {
+        // Click on the user menu button (look for any button with "User" text or user name)
+        const userMenuButton = this.page.locator('button').filter({ hasText: /User|Automation/ }).first();
+        await userMenuButton.waitFor({ state: 'visible', timeout: 10000 });
+        await userMenuButton.click();
+        this.logger.info('✓ Clicked user menu button');
+        
+        // Wait for menu to appear
+        await this.page.waitForTimeout(1000);
+        
+        // Click logout option
+        const logoutOption = this.page.locator('text=Logout, text=Log out, button:has-text("Logout"), button:has-text("Log out")').first();
+        await logoutOption.waitFor({ state: 'visible', timeout: 5000 });
+        await logoutOption.click();
+        this.logger.info('✓ Clicked logout option');
+      }
+      
+      // Wait for redirect to login page
+      await this.page.waitForURL(url => url.toString().includes('/login'), { timeout: 15000 });
+      this.logger.info('✓ Successfully logged out and redirected to login page');
+    } catch (error) {
+      this.logger.error(`Logout failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sites from dropdown
+   * @param {string} dropdownId - ID of the sites dropdown (e.g., 'ej2_dropdownlist_2004') or null to auto-detect
+   * @returns {Promise<string[]>} Array of site names
+   */
+  async getSitesFromDropdown(dropdownId = null) {
+    this.logger.action(`Getting sites from dropdown${dropdownId ? ': ' + dropdownId : ''}`);
+    
+    try {
+      let dropdown;
+      
+      if (dropdownId) {
+        // Use specific ID if provided
+        dropdown = this.page.locator(`#${dropdownId}`);
+      } else {
+        // Auto-detect the sites dropdown - look for combobox near the top
+        dropdown = this.page.locator('[role="combobox"]').first();
+      }
+      
+      await dropdown.waitFor({ state: 'visible', timeout: 10000 });
+      await dropdown.click();
+      this.logger.info(`✓ Opened sites dropdown`);
+      
+      // Wait for dropdown list to appear
+      await this.page.waitForTimeout(1000);
+      
+      // Get all list items
+      const listItems = this.page.locator('.e-list-item, li[role="option"]').filter({ hasNotText: /^$/ });
+      await listItems.first().waitFor({ state: 'visible', timeout: 5000 });
+      
+      const count = await listItems.count();
+      const sites = [];
+      
+      for (let i = 0; i < count; i++) {
+        const text = await listItems.nth(i).textContent();
+        if (text && text.trim()) {
+          sites.push(text.trim());
+        }
+      }
+      
+      this.logger.info(`✓ Found ${sites.length} sites: ${sites.join(', ')}`);
+      
+      // Close dropdown by pressing Escape
+      await this.page.keyboard.press('Escape');
+      await this.page.waitForTimeout(500);
+      
+      return sites;
+    } catch (error) {
+      this.logger.error(`Failed to get sites from dropdown: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify sites in dropdown
+   * @param {string} dropdownId - ID of the sites dropdown or null to auto-detect
+   * @param {string[]} expectedSites - Expected array of site names
+   * @returns {Promise<void>}
+   */
+  async verifySitesInDropdown(dropdownId, expectedSites) {
+    this.logger.action(`Verifying sites in dropdown${dropdownId ? ': ' + dropdownId : ''}`);
+    
+    const actualSites = await this.getSitesFromDropdown(dropdownId);
+    
+    // Check if all expected sites are present
+    const missingSites = expectedSites.filter(site => !actualSites.includes(site));
+    const extraSites = actualSites.filter(site => !expectedSites.includes(site));
+    
+    if (missingSites.length > 0) {
+      this.logger.error(`Missing sites: ${missingSites.join(', ')}`);
+      throw new Error(`Expected sites not found: ${missingSites.join(', ')}`);
+    }
+    
+    if (extraSites.length > 0) {
+      this.logger.warn(`Extra sites found: ${extraSites.join(', ')}`);
+    }
+    
+    this.logger.info(`✓ All expected sites are present in dropdown`);
+  }
+
+  /**
+   * Verify error message is displayed
+   * @param {string} expectedMessage - Expected error message text
+   * @returns {Promise<void>}
+   */
+  async verifyErrorMessage(expectedMessage) {
+    this.logger.action(`Verifying error message: "${expectedMessage}"`);
+    
+   try {
+      // Wait for error message to appear
+      const errorLocator = this.page.locator(`text=${expectedMessage}`);
+      await errorLocator.waitFor({ state: 'visible', timeout: 10000 });
+      
+      const actualMessage = await errorLocator.textContent();
+      this.logger.info(`✓ Error message displayed: "${actualMessage}"`);
+      
+      if (!actualMessage.includes(expectedMessage)) {
+        throw new Error(`Expected message "${expectedMessage}" but got "${actualMessage}"`);
+      }
+    } catch (error) {
+      this.logger.error(`Error message verification failed: ${error.message}`);
+      throw error;
+    }
+  }
 }
 
 module.exports = BasePage;

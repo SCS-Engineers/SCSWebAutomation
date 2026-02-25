@@ -2,6 +2,7 @@ const LoginPage = require('../pages/loginPage');
 const SiteStatusDashboardPage = require('../pages/siteStatusDashboardPage');
 const ChangePasswordPage = require('../pages/changePasswordPage');
 const LandingPage = require('../pages/landingPage');
+const AdministrationUserPage = require('../pages/Administration/User/administrationUserPage');
 const credentials = require('./credentials');
 const logger = require('./logger');
 
@@ -15,6 +16,7 @@ class TestSetup {
     this.siteStatusDashboardPage = null;
     this.changePasswordPage = null;
     this.landingPage = null;
+    this.administrationUserPage = null;
   }
 
   /**
@@ -30,6 +32,7 @@ class TestSetup {
     this.siteStatusDashboardPage = new SiteStatusDashboardPage(page);
     this.changePasswordPage = new ChangePasswordPage(page);
     this.landingPage = new LandingPage(page);
+    this.administrationUserPage = new AdministrationUserPage(page);
     
     // Navigate to login page
     const loginUrl = credentials.getUrl('loginPage');
@@ -48,6 +51,29 @@ class TestSetup {
   async loginAsValidUser() {
     const { username, password, ...userDetails } = credentials.getUserCredentials('validUser');
     logger.step(`Login as ${username}`);
+    await this.loginPage.loginAndWaitForRedirect(username, password);
+    return { username, password, ...userDetails };
+  }
+
+  /**
+   * Login with custom credentials
+   * @param {string} username - Username
+   * @param {string} password - Password
+   * @returns {Promise<void>}
+   */
+  async loginWithCredentials(username, password) {
+    logger.step(`Login as ${username}`);
+    await this.loginPage.loginAndWaitForRedirect(username, password);
+  }
+
+  /**
+   * Login as specific user type from credentials
+   * @param {string} userType - User type (e.g., 'pwuser16', 'pwuser17')
+   * @returns {Promise<{username: string, password: string}>} User credentials object
+   */
+  async loginAsUser(userType) {
+    const { username, password, ...userDetails } = credentials.getUserCredentials(userType);
+    logger.step(`Login as ${username} (${userType})`);
     await this.loginPage.loginAndWaitForRedirect(username, password);
     return { username, password, ...userDetails };
   }
@@ -87,6 +113,13 @@ class TestSetup {
    */
   getLandingPage() {
     return this.landingPage;
+  }
+
+  /**
+   * Get administration user page instance
+   */
+  getAdministrationUserPage() {
+    return this.administrationUserPage;
   }
 }
 

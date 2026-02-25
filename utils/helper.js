@@ -125,6 +125,27 @@ class Helper {
         : 'Date range is empty'
     };
   }
+
+  /**
+   * Get date plus one year from today in Pacific Time Zone
+   * Returns date in MM/DD/YYYY format
+   * @returns {string} Date in MM/DD/YYYY format
+   */
+  getDatePlusOneYearPacific() {
+    // Get current date in Pacific Time
+    const now = new Date();
+    const pacificDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+    
+    // Add one year
+    const futureDate = new Date(pacificDate.getFullYear() + 1, pacificDate.getMonth(), pacificDate.getDate());
+    
+    // Format as MM/DD/YYYY
+    const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+    const day = String(futureDate.getDate()).padStart(2, '0');
+    const year = futureDate.getFullYear();
+    
+    return `${month}/${day}/${year}`;
+  }
 }
 
 module.exports = new Helper();
