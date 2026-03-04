@@ -325,10 +325,10 @@ class BasePage {
     
     try {
       // Check if there's a direct Logout button visible (some user types)
-      const directLogoutButton = this.page.locator('button:has-text("Logout")').first();
-      const isDirectLogoutVisible = await directLogoutButton.isVisible({ timeout: 2000 }).catch(() => false);
+      const directLogoutButton = this.page.locator('button.btn-logout.scs-logout-btn');
+      const buttonCount = await directLogoutButton.count();
       
-      if (isDirectLogoutVisible) {
+      if (buttonCount > 0 && await directLogoutButton.isVisible()) {
         await directLogoutButton.click();
         this.logger.info('✓ Clicked direct Logout button');
       } else {
@@ -341,16 +341,18 @@ class BasePage {
         // Wait for menu to appear
         await this.page.waitForTimeout(1000);
         
-        // Click logout option
-        const logoutOption = this.page.locator('text=Logout, text=Log out, button:has-text("Logout"), button:has-text("Log out")').first();
-        await logoutOption.waitFor({ state: 'visible', timeout: 5000 });
-        await logoutOption.click();
-        this.logger.info('✓ Clicked logout option');
+        // Click logout button using specific class selector
+        await this.page.locator('button.btn-logout.scs-logout-btn').click({ timeout: 5000 });
+        this.logger.info('✓ Clicked logout button');
       }
       
       // Wait for redirect to login page
       await this.page.waitForURL(url => url.toString().includes('/login'), { timeout: 15000 });
-      this.logger.info('✓ Successfully logged out and redirected to login page');
+      this.logger.info('✓ Redirected to login page');
+      
+      // Wait for Log In button to be visible to confirm page is fully loaded
+      await this.page.getByRole('button', { name: 'Log In', exact: true }).waitFor({ state: 'visible', timeout: 10000 });
+      this.logger.info('✓ Successfully logged out - Log In button is visible');
     } catch (error) {
       this.logger.error(`Logout failed: ${error.message}`);
       throw error;
@@ -366,15 +368,10 @@ class BasePage {
     this.logger.action(`Getting sites from dropdown${dropdownId ? ': ' + dropdownId : ''}`);
     
     try {
-      let dropdown;
-      
-      if (dropdownId) {
-        // Use specific ID if provided
-        dropdown = this.page.locator(`#${dropdownId}`);
-      } else {
-        // Auto-detect the sites dropdown - look for combobox near the top
-        dropdown = this.page.locator('[role="combobox"]').first();
-      }
+      // Use specific ID if provided, otherwise auto-detect the sites dropdown
+      const dropdown = dropdownId 
+        ? this.page.locator(`#${dropdownId}`)
+        : this.page.locator('[role="combobox"]').first();
       
       await dropdown.waitFor({ state: 'visible', timeout: 10000 });
       await dropdown.click();
@@ -387,21 +384,20 @@ class BasePage {
       const listItems = this.page.locator('.e-list-item, li[role="option"]').filter({ hasNotText: /^$/ });
       await listItems.first().waitFor({ state: 'visible', timeout: 5000 });
       
-      const count = await listItems.count();
-      const sites = [];
-      
-      for (let i = 0; i < count; i++) {
-        const text = await listItems.nth(i).textContent();
-        if (text && text.trim()) {
-          sites.push(text.trim());
-        }
-      }
+      // Get all text contents at once
+      const sites = (await listItems.allTextContents())
+        .map(text => text.trim())
+        .filter(text => text.length > 0);
       
       this.logger.info(`✓ Found ${sites.length} sites: ${sites.join(', ')}`);
       
       // Close dropdown by pressing Escape
       await this.page.keyboard.press('Escape');
-      await this.page.waitForTimeout(500);
+      
+      // Wait for dropdown list to close
+      await listItems.first().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {
+        this.logger.info('Dropdown list may already be closed');
+      });
       
       return sites;
     } catch (error) {

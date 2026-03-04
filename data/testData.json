@@ -99,6 +99,18 @@
       "userName": "PW Automation U1",
       "siteName": "AccessExpAutSite1",
       "groupName": "AccessExpAutGrp1"
+    },
+    "administrationUserTest21": {
+      "userName": "PW Automation U1",
+      "groupName1": "AccessExpAutPM1",
+      "groupName2": "AccessExpAutGrp1"
+    },
+    "administrationUserTest22": {
+      "userName": "PW Automation U1",
+      "groupName1": "AccessExpAutPM1",
+      "groupName2": "AccessExpAutGrp1",
+      "siteName1": "AccessExpAutSite1",
+      "siteName2": "AccessExpAutSite2"
     }
   }
 }

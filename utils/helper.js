@@ -1,3 +1,6 @@
+const { addYears, format } = require('date-fns');
+const { toZonedTime } = require('date-fns-tz');
+
 /**
  * Helper utility functions for tests
  */
@@ -132,19 +135,10 @@ class Helper {
    * @returns {string} Date in MM/DD/YYYY format
    */
   getDatePlusOneYearPacific() {
-    // Get current date in Pacific Time
     const now = new Date();
-    const pacificDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-    
-    // Add one year
-    const futureDate = new Date(pacificDate.getFullYear() + 1, pacificDate.getMonth(), pacificDate.getDate());
-    
-    // Format as MM/DD/YYYY
-    const month = String(futureDate.getMonth() + 1).padStart(2, '0');
-    const day = String(futureDate.getDate()).padStart(2, '0');
-    const year = futureDate.getFullYear();
-    
-    return `${month}/${day}/${year}`;
+    const pacificDate = toZonedTime(now, 'America/Los_Angeles');
+    const futureDate = addYears(pacificDate, 1);
+    return format(futureDate, 'MM/dd/yyyy');
   }
 }
 

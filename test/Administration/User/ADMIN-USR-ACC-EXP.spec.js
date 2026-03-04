@@ -84,15 +84,7 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
     await administrationUserPage.clickEditButton();
     await administrationUserPage.waitForSiteAccessGridToLoad();
     await administrationUserPage.wait(stabilizationWait);
-    
-    // Try to disable permission columns, but don't fail if it's not possible
-    try {
-      await administrationUserPage.disableShowPermissionColumnsWithRetry();
-    } catch (error) {
-      logger.warn(`Could not disable permission columns: ${error.message}`);
-      logger.info('Continuing without disabling permission columns');
-    }
-    
+    await administrationUserPage.disableShowPermissionColumnsWithRetry();
     await administrationUserPage.waitForGridRows();
     await administrationUserPage.ensureShowSitesWithAccessGrantedIsSelected();
   }
@@ -1221,78 +1213,81 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
     logger.step(`Step 8: Filter user list by First name "${userName}"`);
     await administrationUserPage.filterByFirstName(userName);
     
-    logger.step('Step 9: Click Edit button');
+    logger.step('Step 9: Drag resize handler up to expand user list section');
+    await administrationUserPage.expandUserListSection();
+    
+    logger.step('Step 10: Click Edit button');
     await administrationUserPage.clickEditButton();
     
-    logger.step('Step 10: Open SITE ACCESS AND PERMISSIONS section');
+    logger.step('Step 11: Open SITE ACCESS AND PERMISSIONS section');
     await administrationUserPage.openSiteAccessPermissions();
     
-    logger.step('Step 11: Wait for site grid to load');
+    logger.step('Step 12: Wait for site grid to load');
     await administrationUserPage.waitForSiteAccessGridToLoad();
     logger.info('✓ Site grid content loaded');
     
-    logger.step('Step 11a: Wait for site grid rows to be populated');
+    logger.step('Step 12a: Wait for site grid rows to be populated');
     await administrationUserPage.waitForGridRows();
     logger.info('✓ Site grid rows populated');
     
-    logger.step('Step 11b: Verify both sites are present');
+    logger.step('Step 12b: Verify both sites are present');
     await administrationUserPage.waitForSitesInGrid([site1, site2]);
     logger.info(`✓ Both sites are visible: ${site1}, ${site2}`);
     
-    logger.step('Step 12: Disable "Show permission columns"');
+    logger.step('Step 13: Disable "Show permission columns"');
     await administrationUserPage.disableShowPermissionColumnsWithRetry();
     
-    logger.step(`Step 13: Set Access Expiry Date for "${site1}" to TODAY`);
+    logger.step(`Step 14: Set Access Expiry Date for "${site1}" to TODAY`);
     await administrationUserPage.setAccessExpirationDate(site1, 0);
     
-    logger.step('Step 14: Click Save button');
+    logger.step('Step 15: Click Save button');
     await administrationUserPage.clickSaveButton();
     await administrationUserPage.waitForSuccessMessage();
     logger.info('✓ Changes saved successfully');
     
-    logger.step('Step 15: Logout from peter');
+    logger.step('Step 16: Logout from peter');
     await basePage.logout();
     await administrationUserPage.waitForDOMContentLoaded();
     logger.info('✓ Logged out from peter');
     
-    logger.step('Step 16: Login again as pwuser16');
+    logger.step('Step 17: Login again as pwuser16');
     await testSetup.loginAsUser('pwuser16');
     await administrationUserPage.waitForDOMContentLoaded();
     logger.info('✓ Logged in as pwuser16');
     
-    logger.step('Step 17: Verify user can see only Site 2 in dropdown');
+    logger.step('Step 18: Verify user can see only Site 2 in dropdown');
     await basePage.verifySitesInDropdown(null, [site2]);
     logger.info(`✓ Only ${site2} is visible after ${site1} access expired`);
     
-    logger.step('Step 18: Logout from pwuser16');
+    logger.step('Step 19: Logout from pwuser16');
     await basePage.logout();
     await administrationUserPage.waitForDOMContentLoaded();
     logger.info('✓ Logged out from pwuser16');
     
-    logger.step('Step 19 (Cleanup): Login as peter');
+    logger.step('Step 20 (Cleanup): Login as peter');
     await testSetup.loginAsValidUser();
     await administrationUserPage.waitForDOMContentLoaded();
     await testSetup.acknowledgeHealthAndSafety();
     
-    logger.step('Step 20: Navigate to user management and filter by First name');
+    logger.step('Step 21: Navigate to user management and filter by First name');
     await administrationUserPage.navigateToAdministrationTab();
     await administrationUserPage.waitForPageReady();
     await administrationUserPage.navigateToUsersList();
     await administrationUserPage.waitForUserGridToLoad();
     await administrationUserPage.filterByFirstName(userName);
     
-    logger.step('Step 21: Click Edit and open SITE ACCESS AND PERMISSIONS');
+    logger.step('Step 22: Click Edit and open SITE ACCESS AND PERMISSIONS');
     await administrationUserPage.clickEditButton();
     await administrationUserPage.openSiteAccessPermissions();
     await administrationUserPage.waitForSiteAccessGridToLoad();
     
-    logger.step('Step 22: Disable "Show permission columns"');
+    logger.step('Step 23: Disable "Show permission columns"');
     await administrationUserPage.disableShowPermissionColumnsWithRetry();
     
-    logger.step(`Step 23: Remove expiry date for "${site1}"`);
+    logger.step(`Step 24: Remove expiry date for "${site1}"`);
     await administrationUserPage.clearAccessExpirationDate(site1);
     
-    logger.step('Step 24: Click Save button');
+    logger.step('Step 25: Click Save button');
     await administrationUserPage.clickSaveButton();
     await administrationUserPage.waitForSuccessMessage();
     logger.info('✓ Cleanup completed - expiry date removed');
@@ -1344,35 +1339,38 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
     logger.step(`Step 8: Filter user list by First name "${userName}"`);
     await administrationUserPage.filterByFirstName(userName);
     
-    logger.step('Step 9: Click Edit button');
+    logger.step('Step 9: Drag resize handler up to expand user list section');
+    await administrationUserPage.expandUserListSection();
+    
+    logger.step('Step 10: Click Edit button');
     await administrationUserPage.clickEditButton();
     
-    logger.step('Step 10: Open SITE ACCESS AND PERMISSIONS section');
+    logger.step('Step 11: Open SITE ACCESS AND PERMISSIONS section');
     await administrationUserPage.openSiteAccessPermissions();
     
-    logger.step('Step 10a: Wait for site grid to load');
+    logger.step('Step 11a: Wait for site grid to load');
     await administrationUserPage.waitForSiteAccessGridToLoad();
     logger.info('✓ Site grid content loaded');
     
-    logger.step('Step 10b: Wait for site grid rows to be populated');
+    logger.step('Step 11b: Wait for site grid rows to be populated');
     logger.info('✓ Site grid rows populated');
     
-    logger.step('Step 11: Disable "Show permission columns"');
+    logger.step('Step 12: Disable "Show permission columns"');
     await administrationUserPage.disableShowPermissionColumnsWithRetry();
     
-    logger.step(`Step 12: Set Access Expiry Date for "${siteName}" to TODAY`);
+    logger.step(`Step 13: Set Access Expiry Date for "${siteName}" to TODAY`);
     await administrationUserPage.setAccessExpirationDate(siteName, 0);
     
-    logger.step('Step 13: Click Save button');
+    logger.step('Step 14: Click Save button');
     await administrationUserPage.clickSaveButton();
     await administrationUserPage.waitForSuccessMessage();
     
-    logger.step('Step 14: Logout from peter');
+    logger.step('Step 15: Logout from peter');
     await basePage.logout();
     await administrationUserPage.waitForDOMContentLoaded();
     logger.info('✓ Logged out from peter');
     
-    logger.step('Step 15: Attempt to login as pwuser17 (expect error due to expired access)');
+    logger.step('Step 16: Attempt to login as pwuser17 (expect error due to expired access)');
     const loginPage = testSetup.getLoginPage();
     await loginPage.enterUsername('pwuser17');
     await loginPage.enterPassword('Testing.123');
@@ -1380,20 +1378,20 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
     await loginPage.clickLoginButton();
     logger.info('✓ Login button clicked');
     
-    logger.step('Step 16-17: Verify error dialog and message');
+    logger.step('Step 17-18: Verify error dialog and message');
     await administrationUserPage.verifyErrorDialogWithMessage(expectedErrorMessage);
     logger.info('✓ Error dialog handled successfully');
     
-    logger.step('Step 18: Logout/return to login page');
+    logger.step('Step 19: Logout/return to login page');
     // User is still on login page after error, no need to logout
     logger.info('✓ Still on login page');
     
-    logger.step('Step 19 (Cleanup): Login as peter');
+    logger.step('Step 20 (Cleanup): Login as peter');
     await testSetup.loginAsValidUser();
     await administrationUserPage.waitForDOMContentLoaded();
     await testSetup.acknowledgeHealthAndSafety();
     
-    logger.step('Step 20: Navigate to user management and filter by First name');
+    logger.step('Step 21: Navigate to user management and filter by First name');
     await administrationUserPage.navigateToAdministrationTab();
     await administrationUserPage.waitForPageReady();
     await administrationUserPage.navigateToUsersList();
@@ -1402,18 +1400,18 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
     // Add extra wait and retry for filter in cleanup section
     await administrationUserPage.filterByFirstNameWithRetry(userName, 3);
     
-    logger.step('Step 21: Click Edit and open SITE ACCESS AND PERMISSIONS');
+    logger.step('Step 22: Click Edit and open SITE ACCESS AND PERMISSIONS');
     await administrationUserPage.clickEditButton();
     await administrationUserPage.openSiteAccessPermissions();
     await administrationUserPage.waitForSiteAccessGridToLoad();
     
-    logger.step('Step 22: Disable "Show permission columns"');
+    logger.step('Step 23: Disable "Show permission columns"');
     await administrationUserPage.disableShowPermissionColumnsWithRetry();
     
-    logger.step(`Step 23: Remove expiry date for "${siteName}"`);
+    logger.step(`Step 24: Remove expiry date for "${siteName}"`);
     await administrationUserPage.clearAccessExpirationDate(siteName);
     
-    logger.step('Step 24: Click Save button');
+    logger.step('Step 25: Click Save button');
     await administrationUserPage.clickSaveButton();
     await administrationUserPage.waitForSuccessMessage();
     logger.info('✓ Cleanup completed - expiry date removed');
@@ -1462,12 +1460,6 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Wait for Site Access grid to reload');
       await administrationUserPage.waitForSiteAccessGridToLoad();
       await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
-      
-      logger.step('Disable "Show permission columns"');
-      await administrationUserPage.disableShowPermissionColumnsWithRetry();
-      
-      logger.step('Ensure "Show sites with access granted" is selected');
-      await administrationUserPage.ensureShowSitesWithAccessGrantedIsSelected();
       
       logger.step(`Update Access Expiration Date for "${siteName}" to today\'s date`);
       await administrationUserPage.setAccessExpirationDateToToday(siteName);
@@ -1530,9 +1522,6 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       await administrationUserPage.waitForAccessStatusColumn();
       await administrationUserPage.waitForGridRowsWithStabilization();
       
-      logger.step('Ensure "Show sites with access granted" is selected');
-      await administrationUserPage.ensureShowSitesWithAccessGrantedIsSelected();
-      
       logger.step('Click the filter icon on Accessible Sites and select Clear Filter');
       await administrationUserPage.clearColumnFilter('Accessible Sites');
       await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
@@ -1578,41 +1567,405 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Wait for Site Access grid to reload');
       await administrationUserPage.waitForSiteAccessGridToLoad();
       await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
-      
-      logger.step('Disable "Show permission columns"');
-      await administrationUserPage.disableShowPermissionColumnsWithRetry();
-      
-      logger.step('Ensure "Show sites with access granted" is selected');
-      await administrationUserPage.ensureShowSitesWithAccessGrantedIsSelected();
-      
-      logger.step('Wait for grid to stabilize');
       await administrationUserPage.waitForGridRows();
-      
-      logger.step(`Verify only "${siteName}" is visible (group should be removed)`);
-      await administrationUserPage.waitForSitesInGrid([siteName]);
-      logger.info(`✓ Verified only "${siteName}" is visible after group removal`);
       
       logger.step(`Verify Access Expiration Date for "${siteName}" remains today\'s date`);
       await administrationUserPage.verifyAccessExpirationDateIsToday(siteName);
       logger.info('✓ Access Expiration Date remains today after group removal');
       
-      logger.testEnd('ADMIN-USR-ACC-EXP-20 - Verify providing permission to a group for a user who already has access to one site in that group, with an access expiration date', 'PASSED');
-    } finally {
-      logger.step('Cleanup - Prepare for site removal');
-      try {
-        await administrationUserPage.verifyShowSitesWithAccessSelected();
-        await administrationUserPage.waitForGridContent();
-        await administrationUserPage.waitForGridRows();
-        await administrationUserPage.clickEditButton();
-        await administrationUserPage.waitForSiteAccessGridToLoad();
-        await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
-        logger.info('✓ Grid prepared for cleanup');
-      } catch (error) {
-        logger.warn(`Could not prepare for cleanup: ${error.message}`);
-      }
-      
       logger.step('Cleanup - Remove access for site');
       await cleanupSiteAccess(siteName);
+      
+      logger.testEnd('ADMIN-USR-ACC-EXP-20 - Verify providing permission to a group for a user who already has access to one site in that group, with an access expiration date', 'PASSED');
+    } catch (error) {
+      logger.testEnd('ADMIN-USR-ACC-EXP-20 - Verify providing permission to a group for a user who already has access to one site in that group, with an access expiration date', 'FAILED');
+      throw error;
+    }
+  });
+
+  test('ADMIN-USR-ACC-EXP-21 - Verify that access date is NOT cleared when removing the upper level group access when a site already has lower level group access', async () => {
+    logger.testStart('ADMIN-USR-ACC-EXP-21 - Verify that access date is NOT cleared when removing the upper level group access when a site already has lower level group access');
+    
+    const { userName, groupName1, groupName2 } = testData.testData.administrationUserTest21;
+    
+    try {
+      // Initial setup
+      await setupUserForSiteAccess(userName);
+      
+      logger.step('Navigate to "Show groups with no access granted"');
+      await administrationUserPage.enableShowGroupsWithNoAccess();
+      
+      logger.step('Wait for groups grid to load');
+      await administrationUserPage.waitForGridContent();
+      
+      logger.step(`Search for "${groupName1}" in the Group/Site list`);
+      await administrationUserPage.filterByGroupName(groupName1);
+      
+      logger.step('Wait for filtered group to appear');
+      await administrationUserPage.waitForGroupCellVisible(groupName1);
+      
+      logger.step(`Grant access to group "${groupName1}"`);
+      await administrationUserPage.clickGroupCell(groupName1);
+      await administrationUserPage.grantAccessToGroup(groupName1);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Group access granted and saved');
+      
+      logger.step('Verify "Show sites with access granted" is selected');
+      await administrationUserPage.verifyShowSitesWithAccessSelected();
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      
+      logger.step('Click Edit button to modify expiration date');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for Site Access grid to reload');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Disable "Show permission columns"');
+      await administrationUserPage.disableShowPermissionColumnsWithRetry();
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForAccessStatusColumn();
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step('Click the filter icon on Accessible Sites and select Clear Filter');
+      await administrationUserPage.clearColumnFilter('Accessible Sites');
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Wait for sites grid data to load');
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step(`Capture first site from "${groupName1}" group to set expiration date`);
+      const siteFromGroup1 = await administrationUserPage.getFirstSiteNameFromGrid();
+      logger.info(`✓ Captured site name: ${siteFromGroup1}`);
+      
+      logger.step(`Update Access Expiration Date for "${siteFromGroup1}" to today\'s date`);
+      await administrationUserPage.setAccessExpirationDateToToday(siteFromGroup1);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Expiration date updated to today');
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Click Edit button again');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for Site Access grid to reload');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Navigate to "Show groups with no access granted"');
+      await administrationUserPage.enableShowGroupsWithNoAccess();
+      
+      logger.step('Wait for groups grid to load');
+      await administrationUserPage.waitForGridContent();
+      
+      logger.step(`Search for "${groupName2}" in the Group/Site list`);
+      await administrationUserPage.filterByGroupName(groupName2);
+      
+      logger.step('Wait for filtered group to appear');
+      await administrationUserPage.waitForGroupCellVisible(groupName2);
+      
+      logger.step(`Grant access to group "${groupName2}"`);
+      await administrationUserPage.clickGroupCell(groupName2);
+      await administrationUserPage.grantAccessToGroup(groupName2);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Second group access granted and saved');
+      
+      logger.step('Wait for page to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.waitForGridRowsWithStabilization(30000, 5000);
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Click Edit button again');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for SITE ACCESS AND PERMISSIONS section to load');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Disable "Show permission columns"');
+      await administrationUserPage.disableShowPermissionColumnsWithRetry();
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForAccessStatusColumn();
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step('Click the filter icon on Accessible Sites and select Clear Filter');
+      await administrationUserPage.clearColumnFilter('Accessible Sites');
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Wait for sites grid data to load');
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step(`Verify site "${siteFromGroup1}" from first group is visible`);
+      await administrationUserPage.waitForSitesInGrid([siteFromGroup1]);
+      logger.info(`✓ Verified "${siteFromGroup1}" is visible in the grid`);
+      
+      logger.step(`Verify Access Expiration Date for "${siteFromGroup1}" is still today\'s date`);
+      await administrationUserPage.verifyAccessExpirationDateIsToday(siteFromGroup1);
+      logger.info('✓ Access Expiration Date is still today');
+      
+      logger.step('Go to "Show groups with access granted"');
+      await administrationUserPage.enableShowGroupsWithAccessGranted();
+      
+      logger.step('Wait for groups grid to load');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      
+      logger.step(`Remove access from "${groupName2}"`);
+      await administrationUserPage.removeAccessForGroup(groupName2);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Second group access removed');
+      
+      logger.step('Verify "Show sites with access granted" is selected');
+      await administrationUserPage.verifyShowSitesWithAccessSelected();
+      
+      logger.step('Wait for page to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.waitForGridRowsWithStabilization(30000, 5000);
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Click Edit button again');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for Site Access grid to reload');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      await administrationUserPage.waitForGridRows();
+      
+      logger.step('Disable "Show permission columns"');
+      await administrationUserPage.disableShowPermissionColumnsWithRetry();
+      
+      logger.step(`Verify Access Expiration Date for "${siteFromGroup1}" remains today\'s date`);
+      await administrationUserPage.verifyAccessExpirationDateIsToday(siteFromGroup1);
+      logger.info('✓ Access Expiration Date remains today after second group removal');
+      
+      logger.step('Cleanup - Remove access for first group');
+      await administrationUserPage.enableShowGroupsWithAccessGranted();
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.removeAccessForGroup(groupName1);
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Cleanup completed - first group access removed');
+      
+      logger.testEnd('ADMIN-USR-ACC-EXP-21 - Verify that access date is NOT cleared when removing the upper level group access when a site already has lower level group access', 'PASSED');
+    } catch (error) {
+      logger.testEnd('ADMIN-USR-ACC-EXP-21 - Verify that access date is NOT cleared when removing the upper level group access when a site already has lower level group access', 'FAILED');
+      throw error;
+    }
+  });
+
+  test('ADMIN-USR-ACC-EXP-22 - Verify that access date is NOT cleared when removing the lower level group access when a site already has higher level group access', async () => {
+    logger.testStart('ADMIN-USR-ACC-EXP-22 - Verify that access date is NOT cleared when removing the lower level group access when a site already has higher level group access');
+    
+    const { userName, groupName1, groupName2, siteName1, siteName2 } = testData.testData.administrationUserTest22;
+    
+    try {
+      // Initial setup
+      await setupUserForSiteAccess(userName);
+      
+      logger.step('Navigate to "Show groups with no access granted"');
+      await administrationUserPage.enableShowGroupsWithNoAccess();
+      
+      logger.step('Wait for groups grid to load');
+      await administrationUserPage.waitForGridContent();
+      
+      logger.step(`Search for "${groupName1}" in the Group/Site list`);
+      await administrationUserPage.filterByGroupName(groupName1);
+      
+      logger.step('Wait for filtered group to appear');
+      await administrationUserPage.waitForGroupCellVisible(groupName1);
+      
+      logger.step(`Grant access to group "${groupName1}"`);
+      await administrationUserPage.clickGroupCell(groupName1);
+      await administrationUserPage.grantAccessToGroup(groupName1);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Group access granted and saved');
+      
+      logger.step('Verify "Show sites with access granted" is selected');
+      await administrationUserPage.verifyShowSitesWithAccessSelected();
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      
+      logger.step('Click Edit button to modify expiration date');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for Site Access grid to reload');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Disable "Show permission columns"');
+      await administrationUserPage.disableShowPermissionColumnsWithRetry();
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForAccessStatusColumn();
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step('Click the filter icon on Accessible Sites and select Clear Filter');
+      await administrationUserPage.clearColumnFilter('Accessible Sites');
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Wait for sites grid data to load');
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step(`Update Access Expiration Date for "${siteName1}" to today\'s date`);
+      await administrationUserPage.setAccessExpirationDateToToday(siteName1);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Expiration date updated to today');
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Click Edit button again');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for Site Access grid to reload');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Navigate to "Show groups with no access granted"');
+      await administrationUserPage.enableShowGroupsWithNoAccess();
+      
+      logger.step('Wait for groups grid to load');
+      await administrationUserPage.waitForGridContent();
+      
+      logger.step(`Search for "${groupName2}" in the Group/Site list`);
+      await administrationUserPage.filterByGroupName(groupName2);
+      
+      logger.step('Wait for filtered group to appear');
+      await administrationUserPage.waitForGroupCellVisible(groupName2);
+      
+      logger.step(`Grant access to group "${groupName2}"`);
+      await administrationUserPage.clickGroupCell(groupName2);
+      await administrationUserPage.grantAccessToGroup(groupName2);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Second group access granted and saved');
+      
+      logger.step('Wait for page to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.waitForGridRowsWithStabilization(30000, 5000);
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Click Edit button again');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for SITE ACCESS AND PERMISSIONS section to load');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Disable "Show permission columns"');
+      await administrationUserPage.disableShowPermissionColumnsWithRetry();
+      
+      logger.step('Wait for grid to stabilize');
+      await administrationUserPage.waitForAccessStatusColumn();
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step('Click the filter icon on Accessible Sites and select Clear Filter');
+      await administrationUserPage.clearColumnFilter('Accessible Sites');
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Wait for sites grid data to load');
+      await administrationUserPage.waitForGridRowsWithStabilization();
+      
+      logger.step(`Verify site "${siteName1}" from first group is visible`);
+      await administrationUserPage.waitForSitesInGrid([siteName1]);
+      logger.info(`✓ Verified "${siteName1}" is visible in the grid`);
+      
+      logger.step(`Verify Access Expiration Date for "${siteName1}" is still today\'s date`);
+      await administrationUserPage.verifyAccessExpirationDateIsToday(siteName1);
+      logger.info('✓ Access Expiration Date is still today');
+      
+      logger.step('Go to "Show groups with access granted"');
+      await administrationUserPage.enableShowGroupsWithAccessGranted();
+      
+      logger.step('Wait for groups grid to load');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      
+      logger.step(`Remove access from "${groupName1}"`);
+      await administrationUserPage.removeAccessForGroup(groupName1);
+      
+      logger.step('Click Save button');
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ First group access removed');
+      
+      logger.step('Verify "Show sites with access granted" is selected');
+      await administrationUserPage.verifyShowSitesWithAccessSelected();
+      
+      logger.step('Wait for page to stabilize');
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.waitForGridRowsWithStabilization(30000, 5000);
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      
+      logger.step('Click Edit button again');
+      await administrationUserPage.clickEditButton();
+      
+      logger.step('Wait for Site Access grid to reload');
+      await administrationUserPage.waitForSiteAccessGridToLoad();
+      await administrationUserPage.wait(WAIT_TIMES.GRID_STABILIZATION);
+      await administrationUserPage.waitForGridRows();
+      
+      logger.step('Disable "Show permission columns"');
+      await administrationUserPage.disableShowPermissionColumnsWithRetry();
+      
+      logger.step(`Verify Access Expiration Date for "${siteName1}" remains today\'s date`);
+      await administrationUserPage.verifyAccessExpirationDateIsToday(siteName1);
+      logger.info('✓ Access Expiration Date remains today after first group removal');
+      
+      logger.step(`Verify both sites "${siteName1}" and "${siteName2}" are visible in the grid`);
+      await administrationUserPage.waitForSitesInGrid([siteName1, siteName2]);
+      logger.info(`✓ Both sites "${siteName1}" and "${siteName2}" are visible`);
+      
+      logger.step('Cleanup - Remove access for second group');
+      await administrationUserPage.enableShowGroupsWithAccessGranted();
+      await administrationUserPage.waitForGridContent();
+      await administrationUserPage.waitForGridRows();
+      await administrationUserPage.removeAccessForGroup(groupName2);
+      await administrationUserPage.clickSaveButton();
+      await administrationUserPage.waitForSuccessMessage();
+      logger.info('✓ Cleanup completed - second group access removed');
+      
+      logger.testEnd('ADMIN-USR-ACC-EXP-22 - Verify that access date is NOT cleared when removing the lower level group access when a site already has higher level group access', 'PASSED');
+    } catch (error) {
+      logger.testEnd('ADMIN-USR-ACC-EXP-22 - Verify that access date is NOT cleared when removing the lower level group access when a site already has higher level group access', 'FAILED');
+      throw error;
     }
   });
 

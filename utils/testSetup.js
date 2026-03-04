@@ -50,7 +50,7 @@ class TestSetup {
    */
   async loginAsValidUser() {
     const { username, password, ...userDetails } = credentials.getUserCredentials('validUser');
-    logger.step(`Login as ${username}`);
+    logger.action(`Login as ${username}`);
     await this.loginPage.loginAndWaitForRedirect(username, password);
     return { username, password, ...userDetails };
   }
@@ -62,7 +62,7 @@ class TestSetup {
    * @returns {Promise<void>}
    */
   async loginWithCredentials(username, password) {
-    logger.step(`Login as ${username}`);
+    logger.action(`Login as ${username}`);
     await this.loginPage.loginAndWaitForRedirect(username, password);
   }
 
@@ -73,7 +73,7 @@ class TestSetup {
    */
   async loginAsUser(userType) {
     const { username, password, ...userDetails } = credentials.getUserCredentials(userType);
-    logger.step(`Login as ${username} (${userType})`);
+    logger.action(`Login as ${username} (${userType})`);
     await this.loginPage.loginAndWaitForRedirect(username, password);
     return { username, password, ...userDetails };
   }
@@ -83,7 +83,7 @@ class TestSetup {
    * @returns {Promise<void>}
    */
   async acknowledgeHealthAndSafety() {
-    logger.step('Acknowledge Health & Safety modal');
+    logger.action('Acknowledge Health & Safety modal');
     await this.siteStatusDashboardPage.clickOkOnHealthSafetyModal();
   }
 

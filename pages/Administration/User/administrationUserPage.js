@@ -201,6 +201,19 @@ class AdministrationUserPage extends BasePage {
   async waitForSitesInGrid(siteNames, timeout = 15000) {
     this.logger.action(`Waiting for sites to appear in grid: ${siteNames.join(', ')}`);
     
+    // Wait for document to be fully loaded
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+    this.logger.info('✓ Document loaded');
+    
+    // Wait for network to be idle
+    await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
+      this.logger.info('Network did not go idle, continuing...');
+    });
+    
+    // Wait for grid content to be visible
+    await this.page.locator('.e-gridcontent').first().waitFor({ state: 'visible', timeout: 30000 });
+    this.logger.info('✓ Grid content is visible');
+    
     // Wait for the first site to appear as an indicator that grid has loaded
     const firstSite = siteNames[0];
     
