@@ -26,12 +26,16 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "1.40.0",
+    "@playwright/test": "1.58.2",
     "allure-commandline": "2.36.0",
     "allure-playwright": "3.4.4",
     "dotenv": "17.2.3",
     "rimraf": "6.1.2",
-    "winston": "^3.19.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston": "3.19.0",
+    "winston-daily-rotate-file": "5.0.0"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0"
   }
 }

@@ -8,7 +8,7 @@ module.exports = defineConfig({
   },
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: 1, // Retry failed tests twice
+  retries: 0, // Retry failed tests twice
   workers: 1, // Run tests one at a time to avoid multiple browsers opening
   reporter: [
     ['html', { open: 'never' }],

@@ -1,3 +1,6 @@
+const { addYears, format } = require('date-fns');
+const { toZonedTime } = require('date-fns-tz');
+
 /**
  * Helper utility functions for tests
  */
@@ -124,6 +127,18 @@ class Helper {
         ? `Date range is set: ${dateRangeText}`
         : 'Date range is empty'
     };
+  }
+
+  /**
+   * Get date plus one year from today in Pacific Time Zone
+   * Returns date in MM/DD/YYYY format
+   * @returns {string} Date in MM/DD/YYYY format
+   */
+  getDatePlusOneYearPacific() {
+    const now = new Date();
+    const pacificDate = toZonedTime(now, 'America/Los_Angeles');
+    const futureDate = addYears(pacificDate, 1);
+    return format(futureDate, 'MM/dd/yyyy');
   }
 }
 

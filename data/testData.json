@@ -25,6 +25,14 @@
     "invalidBoth": {
       "username": "PLACEHOLDER_USE_ENV",
       "password": "PLACEHOLDER_USE_ENV"
+    },
+    "pwuser16": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV"
+    },
+    "pwuser17": {
+      "username": "PLACEHOLDER_USE_ENV",
+      "password": "PLACEHOLDER_USE_ENV"
     }
   },
   "testUrls": {
@@ -59,6 +67,50 @@
         "contacts": "Contacts"
       },
       "dateTimePattern": "^[A-Z][a-z]{2} \\d{2}, \\d{4} \\d{1,2}:\\d{2} (AM|PM)$"
+    },
+    "administrationUser": {
+      "userName": "PW Automation U1",
+      "siteName": "PW Automation S1",
+      "groupName": "PlaywrightGroup",
+      "siteNames": {
+        "s1": "PW Automation S1",
+        "s2": "PW Automation S2",
+        "s3": "PW Automation S3",
+        "s4": "PW Automation S4",
+        "s5": "PW Automation S5"
+      },
+      "expectedAccessStatus": "Active",
+      "dragResizePixels": 200,
+      "expandSiteGridPixels": 300
+    },
+    "administrationUserJeewaka": {
+      "userName": "Jeewaka"
+    },
+    "administrationUserTest16": {
+      "userName": "PW Automation ADMIN User 16",
+      "site1": "PW Automation ADMIN16 Site 1",
+      "site2": "PW Automation ADMIN16 Site 2"
+    },
+    "administrationUserTest17": {
+      "userName": "PW Automation ADMIN User 17",
+      "siteName": "PW Automation ADMIN17 Site"
+    },
+    "administrationUserTest20": {
+      "userName": "PW Automation U1",
+      "siteName": "AccessExpAutSite1",
+      "groupName": "AccessExpAutGrp1"
+    },
+    "administrationUserTest21": {
+      "userName": "PW Automation U1",
+      "groupName1": "AccessExpAutPM1",
+      "groupName2": "AccessExpAutGrp1"
+    },
+    "administrationUserTest22": {
+      "userName": "PW Automation U1",
+      "groupName1": "AccessExpAutPM1",
+      "groupName2": "AccessExpAutGrp1",
+      "siteName1": "AccessExpAutSite1",
+      "siteName2": "AccessExpAutSite2"
     }
   }
 }

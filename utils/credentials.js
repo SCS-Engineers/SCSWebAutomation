@@ -52,7 +52,9 @@ const users = {
   noAccessUser: buildUserCredentials('NO_ACCESS_USER', testData.users.noAccessUser),
   invalidUsername: buildUserCredentials('INVALID_USERNAME', testData.users.invalidUsername),
   invalidPassword: buildUserCredentials('INVALID_PASSWORD', testData.users.invalidPassword),
-  invalidBoth: buildUserCredentials('INVALID_BOTH', testData.users.invalidBoth)
+  invalidBoth: buildUserCredentials('INVALID_BOTH', testData.users.invalidBoth),
+  pwuser16: buildUserCredentials('PWUSER16', testData.users.pwuser16),
+  pwuser17: buildUserCredentials('PWUSER17', testData.users.pwuser17)
 };
 
 // Build URLs object with environment variables taking precedence
