@@ -11,6 +11,32 @@ class AdministrationUserPage extends BasePage {
     super(page);
   }
 
+  // Constants for Test 34 (User Status Report)
+  static get TIMEOUTS() {
+    return {
+      TREE_VIEW_LOAD: 15000,
+      REPORT_GENERATION: 7000,
+      CONTENT_STABILIZATION: 3000,
+      SHORT_WAIT: 2000,
+      ELEMENT_VISIBILITY: 10000,
+      SCROLL_WAIT: 1000,
+    };
+  }
+
+  static get DATE_PATTERNS() {
+    return {
+      MM_DD_YYYY: /^\d{2}\/\d{2}\/\d{4}$/,
+    };
+  }
+
+  static get COLUMN_HEADERS() {
+    return {
+      LAST_LOGON: { first: 'Last Logon', second: 'Date' },
+      ACCESS_EXPIRATION: { first: 'Access', second: 'Expiration' },
+      CREATED_DATE: 'Created Date',
+    };
+  }
+
   /**
    * Navigate to Administration tab
    * @returns {Promise<void>}
@@ -4038,21 +4064,528 @@ class AdministrationUserPage extends BasePage {
    * @param {number} timeout - Timeout in milliseconds (default: 15000)
    * @returns {Promise<void>}
    */
-  async waitForExcelFilterDialogReady(excelFilter, timeout = 15000) {
-    this.logger.info('Waiting for Excel filter dialog OK button to be ready');
+  /**
+   * Verify site name in dropdown
+   * @param {string} siteName - Expected site name
+   * @param {string} dropdownId - Dropdown element ID (optional)
+   * @returns {Promise<void>}
+   */
+  async verifySiteInDropdown(siteName, dropdownId = null) {
+    this.logger.action(`Verifying site "${siteName}" in dropdown`);
     
-    await this.page.waitForFunction(
-      () => {
-        const filterDialog = document.querySelector('[aria-label="Excel filter"]');
-        if (!filterDialog) return false;
-        const btn = filterDialog.querySelector('button[type="button"]');
-        return btn && btn.textContent.trim() === 'OK' && !btn.disabled;
-      },
-      { timeout }
+    // If dropdown ID is provided, use it; otherwise use a generic locator
+    const dropdown = dropdownId 
+      ? this.page.locator(`#${dropdownId}`)
+      : this.page.locator('input[role="combobox"]').first();
+    
+    await dropdown.waitFor({ state: 'visible', timeout: 10000 });
+    const dropdownValue = await dropdown.inputValue();
+    
+    if (!dropdownValue.includes(siteName)) {
+      throw new Error(`Expected site "${siteName}" not found in dropdown. Found: "${dropdownValue}"`);
+    }
+    
+    this.logger.info(`✓ Site "${siteName}" is visible in dropdown`);
+  }
+
+  /**
+   * Click Admin from toolbar
+   * @returns {Promise<void>}
+   * @throws {Error} If Admin toolbar item is not found
+   */
+  async clickAdminToolbar() {
+    this.logger.action('Clicking Admin toolbar item');
+    
+    try {
+      await this.page.waitForLoadState('domcontentloaded');
+      
+      const adminToolbar = this.page.locator('.toolbar-item.admin-reports');
+      await adminToolbar.waitFor({ 
+        state: 'visible', 
+        timeout: AdministrationUserPage.TIMEOUTS.ELEMENT_VISIBILITY 
+      });
+      await adminToolbar.click();
+      await this.page.waitForLoadState('networkidle');
+      
+      this.logger.info('✓ Clicked Admin toolbar item');
+    } catch (error) {
+      this.logger.error(`Failed to click Admin toolbar: ${error.message}`);
+      throw new Error(`Admin toolbar click failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Click User Status tree item from report tree
+   * @returns {Promise<void>}
+   * @throws {Error} If User Status item is disabled or not found
+   */
+  async clickUserStatus() {
+    this.logger.action('Clicking User Status in report tree');
+    
+    try {
+      const treeView = this.page.locator('.e-treeview');
+      await treeView.waitFor({ 
+        state: 'visible', 
+        timeout: AdministrationUserPage.TIMEOUTS.TREE_VIEW_LOAD 
+      });
+      this.logger.info('✓ Tree view is visible');
+      
+      await this.page.waitForTimeout(AdministrationUserPage.TIMEOUTS.SHORT_WAIT);
+      
+      const userStatusTreeItem = this.page.locator(
+        '.e-list-item.e-level-2:has(.scs-report-title:has-text("User Status"))'
+      );
+      await userStatusTreeItem.waitFor({ 
+        state: 'visible', 
+        timeout: AdministrationUserPage.TIMEOUTS.ELEMENT_VISIBILITY 
+      });
+      
+      await this._verifyTreeItemEnabled(userStatusTreeItem);
+      
+      await userStatusTreeItem.click();
+      await this._waitForPageLoad();
+      
+      this.logger.info('✓ Clicked User Status tree item and page loaded');
+    } catch (error) {
+      this.logger.error(`Failed to click User Status: ${error.message}`);
+      throw new Error(`User Status navigation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Verify tree item is enabled (not disabled by permissions)
+   * @private
+   * @param {import('@playwright/test').Locator} treeItem - Tree item locator
+   * @returns {Promise<void>}
+   * @throws {Error} If tree item is disabled
+   */
+  async _verifyTreeItemEnabled(treeItem) {
+    const isDisabled = await treeItem.getAttribute('aria-disabled');
+    if (isDisabled === 'true') {
+      throw new Error('User Status tree item is disabled. User may not have permission to access this report.');
+    }
+  }
+
+  /**
+   * Wait for page to load with content stabilization
+   * @private
+   * @returns {Promise<void>}
+   */
+  async _waitForPageLoad() {
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(AdministrationUserPage.TIMEOUTS.SHORT_WAIT);
+  }
+
+  /**
+   * Verify User Status page loaded
+   * @returns {Promise<void>}
+   * @throws {Error} If User Status title not found
+   */
+  async verifyUsersTextVisible() {
+    this.logger.action('Verifying User Status page loaded');
+    
+    try {
+      const userStatusTitle = this.page.locator('div.scs-report-title:has-text("User Status")');
+      await userStatusTitle.waitFor({ 
+        state: 'visible', 
+        timeout: AdministrationUserPage.TIMEOUTS.ELEMENT_VISIBILITY 
+      });
+      
+      this.logger.info('✓ User Status page loaded with title visible');
+    } catch (error) {
+      this.logger.error(`User Status page verification failed: ${error.message}`);
+      throw new Error(`User Status page not loaded: ${error.message}`);
+    }
+  }
+
+  /**
+   * Click Create Report button
+   * @returns {Promise<void>}
+   * @throws {Error} If Create Report button not found
+   */
+  async clickCreateReport() {
+    this.logger.action('Clicking Create Report button');
+    
+    try {
+      const createReportButton = this.page.getByRole('button', { name: /create report/i });
+      await createReportButton.waitFor({ 
+        state: 'visible', 
+        timeout: AdministrationUserPage.TIMEOUTS.ELEMENT_VISIBILITY 
+      });
+      await createReportButton.click();
+      
+      await this._waitForPageLoad();
+      
+      this.logger.info('✓ Clicked Create Report button');
+    } catch (error) {
+      this.logger.error(`Create Report button click failed: ${error.message}`);
+      throw new Error(`Failed to create report: ${error.message}`);
+    }
+  }
+
+  /**
+   * Verify User Status Report page loaded and content rendered
+   * @returns {Promise<void>}
+   * @throws {Error} If report page doesn't load within timeout
+   */
+  async verifyUserStatusReportPage() {
+    this.logger.action('Verifying User Status Report page loaded');
+    
+    try {
+      await this.page.waitForTimeout(AdministrationUserPage.TIMEOUTS.REPORT_GENERATION);
+      
+      const reportTitle = this.page.locator('text=/User Status/i').first();
+      await reportTitle.waitFor({ 
+        state: 'visible', 
+        timeout: AdministrationUserPage.TIMEOUTS.TREE_VIEW_LOAD 
+      });
+      
+      this.logger.info('✓ User Status Report page loaded');
+    } catch (error) {
+      this.logger.error(`Report page verification failed: ${error.message}`);
+      throw new Error(`User Status Report page did not load: ${error.message}`);
+    }
+  }
+
+  /**
+   * Verify Access Expiration column exists (split header: "Access" / "Expiration")
+   * @returns {Promise<void>}
+   * @throws {Error} If column header not found
+   */
+  async verifyAccessExpirationColumn() {
+    this.logger.action('Verifying Access Expiration column exists');
+    
+    try {
+      await this.page.waitForTimeout(AdministrationUserPage.TIMEOUTS.CONTENT_STABILIZATION);
+      
+      await this._scrollToRightMost();
+      
+      await this._verifyColumnHeaderText('Access');
+      await this._verifyColumnHeaderText('Expiration');
+      
+      this.logger.info('✓ Access Expiration column is visible');
+    } catch (error) {
+      this.logger.error(`Access Expiration column verification failed: ${error.message}`);
+      throw new Error(`Access Expiration column not found: ${error.message}`);
+    }
+  }
+
+  /**
+   * Scroll page horizontally to rightmost position
+   * @private
+   * @returns {Promise<void>}
+   */
+  async _scrollToRightMost() {
+    await this.page.evaluate(() => {
+      window.scrollTo({ left: 9999, behavior: 'smooth' });
+    });
+    await this.page.waitForTimeout(AdministrationUserPage.TIMEOUTS.SCROLL_WAIT);
+  }
+
+  /**
+   * Verify column header text exists
+   * @private
+   * @param {string} headerText - Text to find in column header
+   * @returns {Promise<void>}
+   * @throws {Error} If header text not found
+   */
+  async _verifyColumnHeaderText(headerText) {
+    const textLocator = this.page.locator(`text="${headerText}"`);
+    await textLocator.first().waitFor({ 
+      state: 'visible', 
+      timeout: AdministrationUserPage.TIMEOUTS.ELEMENT_VISIBILITY 
+    });
+    this.logger.info(`✓ Found "${headerText}" text in column header`);
+  }
+
+  /**
+   * Verify Access Expiration column appears after Last Logon Date column
+   * @returns {Promise<void>}
+   * @throws {Error} If columns not in expected order
+   */
+  async verifyAccessExpirationAfterLastLogonDate() {
+    this.logger.action('Verifying Access Expiration column is after Last Logon Date column');
+    
+    try {
+      const columnPositions = await this._findColumnPositions();
+      this._validateColumnOrder(columnPositions);
+      
+      this.logger.info(
+        `✓ Access Expiration column (index ${columnPositions.accessExpiration}) is after Last Logon Date column (index ${columnPositions.lastLogon})`
+      );
+    } catch (error) {
+      this.logger.error(`Column position verification failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Find positions of Last Logon Date and Access Expiration columns
+   * @private
+   * @returns {Promise<{lastLogon: number, accessExpiration: number}>} Column indices
+   * @throws {Error} If either column not found
+   */
+  async _findColumnPositions() {
+    const allDivs = this.page.locator('div').filter({ hasText: /.+/ });
+    const divCount = await allDivs.count();
+    
+    this.logger.info(`Scanning ${divCount} divs for column headers`);
+    
+    const positions = { lastLogon: -1, accessExpiration: -1 };
+    
+    for (let i = 0; i < divCount; i++) {
+      const divText = await allDivs.nth(i).textContent();
+      const normalizedText = divText?.trim() ?? '';
+      
+      if (positions.lastLogon === -1 && normalizedText === AdministrationUserPage.COLUMN_HEADERS.LAST_LOGON.first) {
+        const nextText = await this._getNextDivText(allDivs, i);
+        if (nextText === AdministrationUserPage.COLUMN_HEADERS.LAST_LOGON.second) {
+          positions.lastLogon = i;
+          this.logger.info(`Found "Last Logon Date" at index ${i}`);
+        }
+      }
+      
+      if (positions.accessExpiration === -1 && normalizedText === AdministrationUserPage.COLUMN_HEADERS.ACCESS_EXPIRATION.first) {
+        const nextText = await this._getNextDivText(allDivs, i);
+        if (nextText === AdministrationUserPage.COLUMN_HEADERS.ACCESS_EXPIRATION.second) {
+          positions.accessExpiration = i;
+          this.logger.info(`Found "Access Expiration" at index ${i}`);
+        }
+      }
+      
+      if (positions.lastLogon !== -1 && positions.accessExpiration !== -1) {
+        break;
+      }
+    }
+    
+    if (positions.lastLogon === -1) {
+      throw new Error('Last Logon Date column not found');
+    }
+    if (positions.accessExpiration === -1) {
+      throw new Error('Access Expiration column not found');
+    }
+    
+    return positions;
+  }
+
+  /**
+   * Get text content of next div safely
+   * @private
+   * @param {import('@playwright/test').Locator} allDivs - All div locators
+   * @param {number} currentIndex - Current index
+   * @returns {Promise<string>} Next div text or empty string
+   */
+  async _getNextDivText(allDivs, currentIndex) {
+    try {
+      const nextDiv = allDivs.nth(currentIndex + 1);
+      const text = await nextDiv.textContent();
+      return text?.trim() ?? '';
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Validate that Access Expiration comes after Last Logon Date
+   * @private
+   * @param {{lastLogon: number, accessExpiration: number}} positions - Column positions
+   * @returns {void}
+   * @throws {Error} If columns are in wrong order
+   */
+  _validateColumnOrder(positions) {
+    if (positions.accessExpiration <= positions.lastLogon) {
+      throw new Error(
+        `Access Expiration (index ${positions.accessExpiration}) should be after Last Logon Date (index ${positions.lastLogon})`
+      );
+    }
+  }
+
+  /**
+   * Get a date value from Access Expiration column
+   * @returns {Promise<string>} Date value in MM/DD/YYYY format
+   * @throws {Error} If no date value found
+   */
+  async getAccessExpirationDateValue() {
+    this.logger.action('Getting date value from Access Expiration column');
+    
+    try {
+      const headerIndex = await this._findAccessExpirationHeader();
+      const dateDivs = await this._findDateValuesAfterIndex(headerIndex);
+      
+      if (dateDivs.length === 0) {
+        throw new Error('No date value found in Access Expiration column');
+      }
+      
+      const ACCESS_EXPIRATION_DATE_INDEX = 3;
+      const dateIndex = Math.min(ACCESS_EXPIRATION_DATE_INDEX, dateDivs.length - 1);
+      const accessExpirationDate = dateDivs[dateIndex].value;
+      
+      this.logger.info(`✓ Access Expiration date value: ${accessExpirationDate}`);
+      return accessExpirationDate;
+    } catch (error) {
+      this.logger.error(`Failed to get Access Expiration date: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Find Access Expiration column header index
+   * @private
+   * @returns {Promise<number>} Index of Access Expiration header
+   * @throws {Error} If header not found
+   */
+  async _findAccessExpirationHeader() {
+    const allDivs = this.page.locator('div');
+    const divCount = await allDivs.count();
+    
+    this.logger.info(`Searching ${divCount} divs for Access Expiration header`);
+    
+    for (let i = 0; i < divCount; i++) {
+      const divText = await allDivs.nth(i).textContent();
+      if (divText?.trim() === AdministrationUserPage.COLUMN_HEADERS.ACCESS_EXPIRATION.first) {
+        const nextText = await this._getNextDivText(allDivs, i);
+        if (nextText === AdministrationUserPage.COLUMN_HEADERS.ACCESS_EXPIRATION.second) {
+          this.logger.info(`Found Access Expiration header at index ${i}`);
+          return i;
+        }
+      }
+    }
+    
+    throw new Error('Access Expiration column header not found');
+  }
+
+  /**
+   * Find date values after given index
+   * @private
+   * @param {number} startIndex - Index to start scanning from
+   * @param {number} [maxScan=200] - Maximum elements to scan
+   * @returns {Promise<Array<{index: number, value: string}>>} Array of date objects
+   */
+  async _findDateValuesAfterIndex(startIndex, maxScan = 200) {
+    const allDivs = this.page.locator('div');
+    const divCount = await allDivs.count();
+    const dateDivs = [];
+    
+    const endIndex = Math.min(divCount, startIndex + maxScan);
+    
+    for (let i = startIndex + 1; i < endIndex; i++) {
+      const divText = await allDivs.nth(i).textContent();
+      const trimmedText = divText?.trim() ?? '';
+      
+      if (AdministrationUserPage.DATE_PATTERNS.MM_DD_YYYY.test(trimmedText)) {
+        dateDivs.push({ index: i, value: trimmedText });
+        this.logger.info(`Found date "${trimmedText}" at index ${i}`);
+      }
+    }
+    
+    return dateDivs;
+  }
+
+  /**
+   * Verify date format matches other date columns in report
+   * @param {string} dateValue - Date value to verify
+   * @returns {Promise<void>}
+   * @throws {Error} If date format is invalid
+   */
+  async verifyDateFormatMatches(dateValue) {
+    this.logger.action(`Verifying date format for: ${dateValue}`);
+    
+    try {
+      if (!AdministrationUserPage.DATE_PATTERNS.MM_DD_YYYY.test(dateValue)) {
+        throw new Error(
+          `Access Expiration date format "${dateValue}" does not match expected pattern MM/DD/YYYY`
+        );
+      }
+      
+      this.logger.info(`✓ Access Expiration date "${dateValue}" matches MM/DD/YYYY format`);
+      
+      const referenceDates = await this._findReferenceDates();
+      
+      if (referenceDates.length > 0) {
+        this.logger.info(`✓ Access Expiration date format "${dateValue}" matches other date column formats`);
+      } else {
+        this.logger.info(`✓ Access Expiration date format "${dateValue}" matches expected pattern MM/DD/YYYY`);
+      }
+    } catch (error) {
+      this.logger.error(`Date format verification failed: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Find reference dates from other columns for format comparison
+   * @private
+   * @returns {Promise<string[]>} Array of reference date values
+   */
+  async _findReferenceDates() {
+    const referenceDates = [];
+    
+    const createdDate = await this._findDateForColumn(AdministrationUserPage.COLUMN_HEADERS.CREATED_DATE);
+    if (createdDate) {
+      referenceDates.push(createdDate);
+      this.logger.info(`Reference Created Date: ${createdDate}`);
+    }
+    
+    const lastLogonDate = await this._findDateForSplitColumn(
+      AdministrationUserPage.COLUMN_HEADERS.LAST_LOGON.first,
+      AdministrationUserPage.COLUMN_HEADERS.LAST_LOGON.second
     );
+    if (lastLogonDate) {
+      referenceDates.push(lastLogonDate);
+      this.logger.info(`Reference Last Logon Date: ${lastLogonDate}`);
+    }
     
-    this.logger.info('✓ Excel filter dialog OK button is ready');
+    return referenceDates;
+  }
+
+  /**
+   * Find first date value for a single-line column header
+   * @private
+   * @param {string} headerText - Column header text
+   * @param {number} [maxScan=100] - Maximum elements to scan after header
+   * @returns {Promise<string|null>} Date value or null if not found
+   */
+  async _findDateForColumn(headerText, maxScan = 100) {
+    const allDivs = this.page.locator('div');
+    const divCount = await allDivs.count();
+    
+    for (let i = 0; i < divCount; i++) {
+      const divText = await allDivs.nth(i).textContent();
+      if (divText?.trim() === headerText) {
+        const dates = await this._findDateValuesAfterIndex(i, maxScan);
+        return dates.length > 0 ? dates[0].value : null;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Find first date value for a split column header (two-line header)
+   * @private
+   * @param {string} firstLine - First line of header
+   * @param {string} secondLine - Second line of header
+   * @param {number} [maxScan=100] - Maximum elements to scan after header
+   * @returns {Promise<string|null>} Date value or null if not found
+   */
+  async _findDateForSplitColumn(firstLine, secondLine, maxScan = 100) {
+    const allDivs = this.page.locator('div');
+    const divCount = await allDivs.count();
+    
+    for (let i = 0; i < divCount; i++) {
+      const divText = await allDivs.nth(i).textContent();
+      if (divText?.trim() === firstLine) {
+        const nextText = await this._getNextDivText(allDivs, i);
+        if (nextText === secondLine) {
+          const dates = await this._findDateValuesAfterIndex(i + 1, maxScan);
+          return dates.length > 0 ? dates[0].value : null;
+        }
+      }
+    }
+    
+    return null;
   }
 }
 
 module.exports = AdministrationUserPage;
+

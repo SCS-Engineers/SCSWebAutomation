@@ -33,6 +33,10 @@
     "pwuser17": {
       "username": "PLACEHOLDER_USE_ENV",
       "password": "PLACEHOLDER_USE_ENV"
+    },
+    "pwautomationu2": {
+      "username": "PW Automation U2",
+      "password": "Testing.123"
     }
   },
   "testUrls": {
@@ -60,13 +64,17 @@
       "expectedTabs": ["DATA APPROVERS", "USERS WITH ACCESS", "CONTACTS"],
       "dataApproversColumns": ["First", "Last", "Title", "Employer", "Phone #", "Mobile #", "Email", "Address", "City", "ST", "Zip", "Last Logon"],
       "usersWithAccessColumns": ["First", "Last", "Title", "Employer", "Phone #", "Mobile #", "Email", "Address", "City", "ST", "Zip", "Last Logon"],
+      "usersWithAccessColumnsWithExpiration": ["First", "Last", "Title", "Employer", "Phone #", "Mobile #", "Email", "Address", "City", "ST", "Zip", "Last Logon", "Access Expiration"],
       "contactsColumns": ["Business Role", "First", "Last", "Title", "Employer", "Phone #", "Mobile #", "Email", "Address", "City", "ST", "Zip", "Last Logon"],
       "tabLabels": {
         "dataApprovers": "Data Approvers",
         "usersWithAccess": "Users With Access",
         "contacts": "Contacts"
       },
-      "dateTimePattern": "^[A-Z][a-z]{2} \\d{2}, \\d{4} \\d{1,2}:\\d{2} (AM|PM)$"
+      "dateTimePattern": "^[A-Z][a-z]{2} \\d{2}, \\d{4} \\d{1,2}:\\d{2} (AM|PM)$",
+      "accessExpirationDatePattern": "^[A-Z][a-z]{2} \\d{1,2}, \\d{4}$",
+      "siteNameForAccessExpiration": "aqabmtestsite1",
+      "userFirstNameForAccessExpiration": "aqamaintperm1"
     },
     "administrationUser": {
       "userName": "PW Automation U1",
@@ -111,6 +119,10 @@
       "groupName2": "AccessExpAutGrp1",
       "siteName1": "AccessExpAutSite1",
       "siteName2": "AccessExpAutSite2"
+    },
+    "administrationUserTest34": {
+      "siteName": "PW Automation ADMIN32 Site",
+      "datePattern": "^\\d{1,2}/\\d{1,2}/\\d{4}$"
     }
   }
 }

@@ -1253,6 +1253,8 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info(`Clicking first contact icon with class: ${iconClass}`);
     const selector = `.${iconClass.split(' ').join('.')}`;
     await this.page.locator(selector).first().click();
+    // Wait for dialog to start opening
+    await this.page.waitForTimeout(500);
     this.logger.info('Successfully clicked contact icon');
   }
 
@@ -1461,6 +1463,30 @@ class SiteStatusDashboardPage extends BasePage {
       await this.page.waitForLoadState('networkidle');
     }
     this.logger.info('Successfully navigated to Surface Emissions tab');
+  }
+
+  /**
+   * Click SCS GROUNDWATER main tab
+   */
+  async clickGroundwaterTab() {
+    this.logger.action('Clicking SCS GROUNDWATER tab');
+    try {
+      const tab = this.page.getByRole('tab', { name: 'SCS GROUNDWATER', exact: true });
+      await tab.waitFor({ state: 'visible', timeout: 10000 });
+      await tab.click();
+      await this.page.waitForLoadState('domcontentloaded');
+      await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
+        this.logger.info('Network did not go idle after clicking Groundwater tab');
+      });
+    } catch (error) {
+      this.logger.error(`Primary Groundwater tab click failed: ${error.message}`);
+      // Fallback: try clicking by text
+      const byText = this.page.locator('text="SCS GROUNDWATER"').first();
+      await byText.waitFor({ state: 'visible', timeout: 10000 });
+      await byText.click();
+      await this.page.waitForLoadState('domcontentloaded');
+    }
+    this.logger.info('✓ Successfully clicked SCS GROUNDWATER tab');
   }
 
   /**
@@ -1725,7 +1751,21 @@ class SiteStatusDashboardPage extends BasePage {
   async clickTab(tabName) {
     this.logger.info(`Clicking tab: "${tabName}"`);
     await this.page.getByRole('tab', { name: tabName }).click();
-    await this.page.getByRole('tab', { name: tabName }).waitFor({ state: 'visible' });
+    this.logger.info(`Successfully clicked tab "${tabName}"`);
+  }
+
+  /**
+   * Click on a tab in popup/modal using class selector (for tabs with role="presentation")
+   * @param {string} tabName - Name of the tab to click
+   */
+  async clickPopupTabByText(tabName) {
+    this.logger.info(`Clicking popup tab: "${tabName}"`);
+    
+    // Use .e-tab-text class selector since the tab has role="presentation", not role="tab"
+    const tabLocator = this.page.locator('.e-tab-text').filter({ hasText: tabName });
+    await tabLocator.waitFor({ state: 'visible', timeout: 30000 });
+    await tabLocator.click();
+    this.logger.info(`Clicked on popup tab "${tabName}"`);
     
     // Wait for network and DOM to stabilize
     await this.page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {});
@@ -1748,7 +1788,7 @@ class SiteStatusDashboardPage extends BasePage {
     await this.page.waitForTimeout(2000);
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     
-    this.logger.info(`Successfully clicked and verified tab "${tabName}" is visible`);
+    this.logger.info(`Successfully clicked and verified popup tab "${tabName}" is visible`);
   }
 
   /**
@@ -1775,6 +1815,91 @@ class SiteStatusDashboardPage extends BasePage {
       await columnHeader.waitFor({ state: 'visible', timeout: 30000 });
     }
     this.logger.info(`✓ All ${expectedColumns.length} columns verified in "${tabLabel}" tab`);
+  }
+
+  /**
+   * Verify Access Expiration column is visible in Users With Access tab
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationColumnVisible() {
+    this.logger.action('Verifying Access Expiration column is visible in Users With Access tab');
+    
+    // Get the specific tabpanel (note: tabpanel name is title case "Users With Access")
+    const tabPanel = this.page.getByRole('tabpanel', { name: 'Users With Access' });
+    
+    // Wait for the tabpanel itself to be visible first
+    await tabPanel.waitFor({ state: 'visible', timeout: 30000 });
+    
+    // Wait for grid content to load
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+    await this.page.waitForTimeout(3000);
+    
+    // Wait for first column header in this specific tabpanel to be attached
+    await tabPanel.getByRole('columnheader').first().waitFor({ state: 'attached', timeout: 60000 });
+    
+    // Wait for table to fully render
+    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    
+    // Verify Access Expiration column within the tabpanel
+    const accessExpirationColumn = tabPanel.getByRole('columnheader', { name: 'Access Expiration', exact: true });
+    await accessExpirationColumn.waitFor({ state: 'visible', timeout: 30000 });
+    
+    this.logger.info('✓ Access Expiration column is visible');
+  }
+
+  /**
+   * Verify user has Access Expiration date in correct format
+   * @param {string} userFirstName - First name of user to verify
+   * @param {string} datePattern - Regex pattern for date format (e.g., "^[A-Z][a-z]{2} \\d{1,2}, \\d{4}$")
+   * @returns {Promise<string>} The actual access expiration date value
+   */
+  async verifyUserAccessExpirationDate(userFirstName, datePattern) {
+    this.logger.action(`Verifying Access Expiration date for user: ${userFirstName}`);
+    
+    // Get the specific tabpanel (note: tabpanel name is title case "Users With Access")
+    const tabPanel = this.page.getByRole('tabpanel', { name: 'Users With Access' });
+    
+    // Wait for grid to load within the tabpanel
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+    await this.page.waitForTimeout(3000);
+    
+    // Wait for grid rows to be present in the tabpanel
+    const gridRows = tabPanel.locator('tr.e-row, tr');
+    await gridRows.first().waitFor({ state: 'attached', timeout: 30000 });
+    this.logger.info(`✓ Grid rows loaded in Users With Access tab`);
+    
+    // Find the row with the user's first name within the tabpanel
+    const userRow = gridRows.filter({ hasText: userFirstName }).first();
+    await userRow.waitFor({ state: 'visible', timeout: 30000 });
+    await userRow.scrollIntoViewIfNeeded().catch(() => {});
+    
+    this.logger.info(`✓ Found user row for: ${userFirstName}`);
+    
+    // Get all cells in the row
+    const cells = userRow.locator('td');
+    const cellCount = await cells.count();
+    this.logger.info(`Found ${cellCount} cells in user row`);
+    
+    // Access Expiration is the last column
+    const accessExpirationCell = cells.last();
+    
+    // Scroll the cell into view
+    await accessExpirationCell.scrollIntoViewIfNeeded().catch(() => {});
+    await accessExpirationCell.waitFor({ state: 'visible', timeout: 10000 });
+    
+    // Get the value
+    const accessExpirationValue = (await accessExpirationCell.textContent()).trim();
+    this.logger.info(`Access Expiration value: "${accessExpirationValue}"`);
+    
+    // Verify format matches expected pattern
+    const regex = new RegExp(datePattern);
+    if (!regex.test(accessExpirationValue)) {
+      throw new Error(`Access Expiration date "${accessExpirationValue}" does not match expected format. Pattern: ${datePattern}`);
+    }
+    
+    this.logger.info(`✓ Access Expiration date is in correct format: ${accessExpirationValue}`);
+    return accessExpirationValue;
   }
 
   /**
@@ -3522,8 +3647,12 @@ class SiteStatusDashboardPage extends BasePage {
    * @returns {Promise<void>}
    */
   async verifyContactsPopupVisible() {
-    const dialogHeader = this.page.locator('.e-dlg-header-content').first();
-    await dialogHeader.waitFor({ state: 'visible', timeout: 10000 });
+    // Wait a moment for dialog to appear
+    await this.page.waitForTimeout(500);
+    
+    // Filter for the visible dialog header containing "Site Contacts"
+    const dialogHeader = this.page.locator('.e-dlg-header-content').filter({ hasText: 'Site Contacts' });
+    await dialogHeader.waitFor({ state: 'visible', timeout: 15000 });
     this.logger.info('✓ Contacts popup is visible');
   }
 
