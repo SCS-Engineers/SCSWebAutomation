@@ -24,23 +24,23 @@ class CustomHTMLReporter {
       attachments: result.attachments,
       steps: result.steps,
       retries: result.retry,
-      annotations: test.annotations
+      annotations: test.annotations,
     });
   }
 
   async onEnd(result) {
     const duration = Date.now() - this.startTime;
     const stats = this.calculateStats();
-    
+
     const html = this.generateHTML(stats, duration);
-    
+
     if (!fs.existsSync(this.outputFolder)) {
       fs.mkdirSync(this.outputFolder, { recursive: true });
     }
-    
+
     const reportPath = path.join(this.outputFolder, 'index.html');
     fs.writeFileSync(reportPath, html);
-    
+
     logger.info(`\n📊 Custom HTML Report generated: ${reportPath}`);
   }
 
@@ -50,10 +50,10 @@ class CustomHTMLReporter {
       passed: 0,
       failed: 0,
       skipped: 0,
-      flaky: 0
+      flaky: 0,
     };
 
-    this.results.forEach(test => {
+    this.results.forEach((test) => {
       if (test.status === 'passed') stats.passed++;
       else if (test.status === 'failed') stats.failed++;
       else if (test.status === 'skipped') stats.skipped++;
@@ -65,7 +65,7 @@ class CustomHTMLReporter {
 
   generateHTML(stats, duration) {
     const passRate = ((stats.passed / stats.total) * 100).toFixed(1);
-    
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -308,7 +308,7 @@ class CustomHTMLReporter {
                         ${test.steps && test.steps.length > 0 ? `
                             <div class="steps">
                                 <strong>📋 Steps:</strong>
-                                ${test.steps.map(step => `
+                                ${test.steps.map((step) => `
                                     <div class="step">
                                         ${this.escapeHtml(step.title)} 
                                         <span style="color: #666; font-size: 0.85em;">(${(step.duration / 1000).toFixed(2)}s)</span>

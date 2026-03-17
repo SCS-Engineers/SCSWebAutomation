@@ -1,0 +1,214 @@
+﻿
+> playwright-pom-project@1.0.0 lint
+> eslint . --ext .js
+
+
+C:\repos\SCS Web Automation\SCSWebAutomation\pages\Administration\User\administrationUserPage.js
+    13:3   error  Useless constructor                                                                                               no-useless-constructor
+   938:9   error  Unary operator '++' used                                                                                          no-plusplus
+  2102:15  error  Use array destructuring                                                                                           prefer-destructuring
+  2370:11  error  Unary operator '++' used                                                                                          no-plusplus
+  2607:23  error  Missing radix parameter                                                                                           radix
+  2657:36  error  Missing radix parameter                                                                                           radix
+  2695:7   error  Unary operator '++' used                                                                                          no-plusplus
+  2712:23  error  Missing radix parameter                                                                                           radix
+  2747:23  error  Missing radix parameter                                                                                           radix
+  2750:11  error  Unexpected use of 'isNaN'. Use Number.isNaN instead https://github.com/airbnb/javascript#standard-library--isnan  no-restricted-globals
+  2750:27  error  Unexpected use of continue statement                                                                              no-continue
+  2756:25  error  Unexpected use of continue statement                                                                              no-continue
+  2759:34  error  Unexpected use of continue statement                                                                              no-continue
+  2813:23  error  Missing radix parameter                                                                                           radix
+  2818:25  error  Missing radix parameter                                                                                           radix
+  2861:14  error  Missing radix parameter                                                                                           radix
+  2896:7   error  Unary operator '++' used                                                                                          no-plusplus
+  2905:26  error  Missing radix parameter                                                                                           radix
+  2923:31  error  Missing radix parameter                                                                                           radix
+  2924:29  error  Missing radix parameter                                                                                           radix
+  2999:23  error  Missing radix parameter                                                                                           radix
+  3002:11  error  Unexpected use of 'isNaN'. Use Number.isNaN instead https://github.com/airbnb/javascript#standard-library--isnan  no-restricted-globals
+  3002:27  error  Unexpected use of continue statement                                                                              no-continue
+  3008:25  error  Unexpected use of continue statement                                                                              no-continue
+  3011:33  error  Unexpected use of continue statement                                                                              no-continue
+  3660:1   error  This line has a length of 127. Maximum allowed is 120                                                             max-len
+  3699:7   error  Unary operator '++' used                                                                                          no-plusplus
+
+C:\repos\SCS Web Automation\SCSWebAutomation\pages\basePage.js
+  143:12  error  Redundant use of `await` on a return value  no-return-await
+
+C:\repos\SCS Web Automation\SCSWebAutomation\pages\changePasswordPage.js
+   60:12  error  Redundant use of `await` on a return value  no-return-await
+  105:12  error  Redundant use of `await` on a return value  no-return-await
+  114:12  error  Redundant use of `await` on a return value  no-return-await
+  124:12  error  Redundant use of `await` on a return value  no-return-await
+  133:12  error  Redundant use of `await` on a return value  no-return-await
+  158:12  error  Redundant use of `await` on a return value  no-return-await
+
+C:\repos\SCS Web Automation\SCSWebAutomation\pages\landingPage.js
+  65:12  error  Redundant use of `await` on a return value  no-return-await
+  74:12  error  Redundant use of `await` on a return value  no-return-await
+  97:12  error  Redundant use of `await` on a return value  no-return-await
+
+C:\repos\SCS Web Automation\SCSWebAutomation\pages\loginPage.js
+   87:12  error  Redundant use of `await` on a return value  no-return-await
+   95:12  error  Redundant use of `await` on a return value  no-return-await
+  120:12  error  Redundant use of `await` on a return value  no-return-await
+  129:12  error  Redundant use of `await` on a return value  no-return-await
+
+C:\repos\SCS Web Automation\SCSWebAutomation\pages\siteStatusDashboardPage.js
+     1:20  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+   174:9   error  Unary operator '++' used                                                                no-plusplus
+   192:12  error  Redundant use of `await` on a return value                                              no-return-await
+   290:15  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+   290:26  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+   660:13  error  Assignment to property of function parameter 'container'                                no-param-reassign
+   667:15  error  Assignment to property of function parameter 'iframe'                                   no-param-reassign
+   705:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+   705:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+   720:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+   720:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+   807:7   error  Unary operator '++' used                                                                no-plusplus
+  1193:12  error  Redundant use of `await` on a return value                                              no-return-await
+  1359:9   error  Unexpected use of continue statement                                                    no-continue
+  1414:9   error  Unexpected use of continue statement                                                    no-continue
+  1526:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  1526:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+  1713:12  error  Redundant use of `await` on a return value                                              no-return-await
+  1721:12  error  Redundant use of `await` on a return value                                              no-return-await
+  2546:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  2546:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+  2678:13  error  Assignment to property of function parameter 'container'                                no-param-reassign
+  2686:15  error  Assignment to property of function parameter 'iframe'                                   no-param-reassign
+  2787:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  2787:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+  2825:11  error  Unary operator '++' used                                                                no-plusplus
+  2862:11  error  Unary operator '++' used                                                                no-plusplus
+  3361:9   error  Unary operator '++' used                                                                no-plusplus
+  3534:3   error  Duplicate name 'getReviewEditToolbar'                                                   no-dupe-class-members
+  3576:3   error  Duplicate name 'getUnapprovedOnlyLabel'                                                 no-dupe-class-members
+  3586:3   error  Duplicate name 'getReadingsLabel'                                                       no-dupe-class-members
+  3594:3   error  Duplicate name 'getReadingGrid'                                                         no-dupe-class-members
+  3606:3   error  Duplicate name 'getReadingGridContentTable'                                             no-dupe-class-members
+  3853:15  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  3853:26  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+  3911:13  error  Assignment to property of function parameter 'container'                                no-param-reassign
+  3969:3   error  Duplicate name 'waitForNetworkIdle'                                                     no-dupe-class-members
+  3998:3   error  Duplicate name 'getVisibleRowCount'                                                     no-dupe-class-members
+  4010:3   error  Duplicate name 'scrollDown'                                                             no-dupe-class-members
+  4016:11  error  Assignment to property of function parameter 'container'                                no-param-reassign
+  4028:3   error  Duplicate name 'scrollUp'                                                               no-dupe-class-members
+  4034:11  error  Assignment to property of function parameter 'container'                                no-param-reassign
+  4221:11  error  Unary operator '++' used                                                                no-plusplus
+  4515:13  error  Assignment to property of function parameter 'container'                                no-param-reassign
+  4523:15  error  Assignment to property of function parameter 'iframe'                                   no-param-reassign
+  4803:1   error  This line has a length of 126. Maximum allowed is 120                                   max-len
+  5025:7   error  Unary operator '++' used                                                                no-plusplus
+  5196:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  5196:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+  5206:3   error  Duplicate name 'verifyReviewEditToolbarActive'                                          no-dupe-class-members
+  5314:3   error  Duplicate name 'verifyOperationsToolbarActive'                                          no-dupe-class-members
+  5315:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  5315:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+  5345:3   error  Duplicate name 'verifyMissedReadingToolbarActive'                                       no-dupe-class-members
+  5346:13  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  5346:24  error  '@playwright/test' should be listed in the project's dependencies, not devDependencies  import/no-extraneous-dependencies
+  5485:3   error  Duplicate name 'validateColumnSorting'                                                  no-dupe-class-members
+  5603:3   error  Duplicate name 'verifyReadingGridVisible'                                               no-dupe-class-members
+  5714:67  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  5742:52  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  5766:3   error  Duplicate name 'verifyLiquidLevelsGridSorting'                                          no-dupe-class-members
+  5766:52  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  5786:53  error  'expect' is already declared in the upper scope on line 1 column 9                      no-shadow
+  5802:3   error  Duplicate name 'verifyDataServicesCheckboxes'                                           no-dupe-class-members
+
+C:\repos\SCS Web Automation\SCSWebAutomation\playwright.config.js
+  29:27  error  'severity' is defined but never used  no-unused-vars
+  30:40  error  'args' is defined but never used      no-unused-vars
+
+C:\repos\SCS Web Automation\SCSWebAutomation\test\Administration\User\adminUserSiteAccessExpirationDate.spec.js
+   257:13  error  'todayDate' is assigned a value but never used         no-unused-vars
+  1486:1   error  This line has a length of 159. Maximum allowed is 120  max-len
+  1552:1   error  This line has a length of 159. Maximum allowed is 120  max-len
+
+C:\repos\SCS Web Automation\SCSWebAutomation\test\Authentication\Change Password\changePassword.spec.js
+  5:7  error  'testData' is assigned a value but never used  no-unused-vars
+
+C:\repos\SCS Web Automation\SCSWebAutomation\test\Authentication\Landing Page\landingPage.spec.js
+   3:7   error  'credentials' is assigned a value but never used  no-unused-vars
+   8:7   error  'loginPage' is assigned a value but never used    no-unused-vars
+  18:74  error  'page' is defined but never used                  no-unused-vars
+  48:82  error  'page' is defined but never used                  no-unused-vars
+
+C:\repos\SCS Web Automation\SCSWebAutomation\test\Authentication\Login\login-scs.spec.js
+    6:7    error  'testData' is assigned a value but never used  no-unused-vars
+  107:117  error  'page' is defined but never used               no-unused-vars
+
+C:\repos\SCS Web Automation\SCSWebAutomation\test\Data Services\Dashboard\siteStatusDashboardLandFill.spec.js
+    4:7    error  'helper' is assigned a value but never used            no-unused-vars
+   16:7    error  'loginPage' is assigned a value but never used         no-unused-vars
+   26:103  error  'page' is defined but never used                       no-unused-vars
+   56:76   error  'page' is defined but never used                       no-unused-vars
+   83:82   error  'page' is defined but never used                       no-unused-vars
+  117:70   error  'page' is defined but never used                       no-unused-vars
+  153:75   error  'page' is defined but never used                       no-unused-vars
+  187:75   error  'page' is defined but never used                       no-unused-vars
+  292:120  error  'page' is defined but never used                       no-unused-vars
+  320:1    error  This line has a length of 139. Maximum allowed is 120  max-len
+
+C:\repos\SCS Web Automation\SCSWebAutomation\test\Data Services\Dashboard\siteStatusDashboardLiquid.spec.js
+   17:7   error  'loginPage' is assigned a value but never used                no-unused-vars
+   93:13  error  'contactIconClass' is assigned a value but never used         no-unused-vars
+  563:1   error  This line has a length of 139. Maximum allowed is 120         max-len
+  653:1   error  This line has a length of 154. Maximum allowed is 120         max-len
+  711:1   error  This line has a length of 165. Maximum allowed is 120         max-len
+  774:18  error  'missedReadingsValueText' is assigned a value but never used  no-unused-vars
+
+C:\repos\SCS Web Automation\SCSWebAutomation\test\Data Services\Dashboard\siteStatusDashboardSEM.spec.js
+    34:140  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   101:103  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   146:81   error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   202:88   error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   264:104  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   324:96   error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   340:99   error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   430:118  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   456:125  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   459:11   error  'filterSiteName' is assigned a value but never used                no-unused-vars
+   482:1    error  This line has a length of 134. Maximum allowed is 120              max-len
+   551:1    error  This line has a length of 127. Maximum allowed is 120              max-len
+   568:157  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   590:1    error  This line has a length of 170. Maximum allowed is 120              max-len
+   652:143  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   678:1    error  This line has a length of 139. Maximum allowed is 120              max-len
+   751:139  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   780:1    error  This line has a length of 169. Maximum allowed is 120              max-len
+   844:162  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   865:1    error  This line has a length of 160. Maximum allowed is 120              max-len
+   906:160  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   927:1    error  This line has a length of 156. Maximum allowed is 120              max-len
+   968:163  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+   989:1    error  This line has a length of 159. Maximum allowed is 120              max-len
+  1030:159  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+  1051:1    error  This line has a length of 156. Maximum allowed is 120              max-len
+  1095:120  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+  1116:1    error  This line has a length of 160. Maximum allowed is 120              max-len
+  1143:171  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+  1164:1    error  This line has a length of 164. Maximum allowed is 120              max-len
+  1201:176  error  'page' is already declared in the upper scope on line 18 column 7  no-shadow
+
+C:\repos\SCS Web Automation\SCSWebAutomation\utils\customReporter.js
+   11:19  error  'suite' is defined but never used   no-unused-vars
+   31:15  error  'result' is defined but never used  no-unused-vars
+   57:37  error  Unary operator '++' used            no-plusplus
+   58:42  error  Unary operator '++' used            no-plusplus
+   59:43  error  Unary operator '++' used            no-plusplus
+   60:57  error  Unary operator '++' used            no-plusplus
+  291:39  error  'index' is defined but never used   no-unused-vars
+
+C:\repos\SCS Web Automation\SCSWebAutomation\utils\helper.js
+  36:37  error  Return values from promise executor functions cannot be read  no-promise-executor-return
+
+C:\repos\SCS Web Automation\SCSWebAutomation\utils\logger.js
+  14:52  error  'level' is defined but never used  no-unused-vars
+
+Γ£û 173 problems (173 errors, 0 warnings)
+

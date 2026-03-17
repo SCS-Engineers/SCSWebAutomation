@@ -7,7 +7,7 @@ const LOCATORS = require('./constants/loginPage.constants');
 class LoginPage extends BasePage {
   constructor(page) {
     super(page);
-    
+
     // Page locators for SCS Login Page
     this.usernameInput = LOCATORS.usernameInput;
     this.passwordInput = LOCATORS.passwordInput;
@@ -84,7 +84,7 @@ class LoginPage extends BasePage {
    */
   async getErrorMessage() {
     await this.waitForElement(this.errorMessage);
-    return await this.getText(this.errorMessage);
+    return this.getText(this.errorMessage);
   }
 
   /**
@@ -92,7 +92,7 @@ class LoginPage extends BasePage {
    * @returns {Promise<boolean>} Error visibility status
    */
   async isErrorDisplayed() {
-    return await this.isVisible(this.errorMessage);
+    return this.isVisible(this.errorMessage);
   }
 
   /**
@@ -117,7 +117,7 @@ class LoginPage extends BasePage {
    * @returns {Promise<boolean>} Logout button visibility status
    */
   async isLogoutButtonVisible(timeout = 5000) {
-    return await this.page.locator(this.logoutButton).isVisible({ timeout }).catch(() => false);
+    return this.page.locator(this.logoutButton).isVisible({ timeout }).catch(() => false);
   }
 
   /**
@@ -126,7 +126,7 @@ class LoginPage extends BasePage {
    * @returns {Promise<boolean>} Health & Safety Message visibility status
    */
   async isHealthSafetyMessageVisible(timeout = 10000) {
-    return await this.page.locator(this.healthSafetyMessage).isVisible({ timeout }).catch(() => false);
+    return this.page.locator(this.healthSafetyMessage).isVisible({ timeout }).catch(() => false);
   }
 
   // ========== COMMON WAIT AND NAVIGATION METHODS ==========
@@ -158,21 +158,21 @@ class LoginPage extends BasePage {
   async loginAndWaitForRedirect(username, password) {
     await this.enterUsername(username);
     await this.enterPassword(password);
-    
+
     // Click login and wait for navigation with extended timeout
     await Promise.all([
-      this.page.waitForURL(url => !url.toString().includes('/login'), { timeout: 60000 }),
-      this.clickLoginButton()
+      this.page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 60000 }),
+      this.clickLoginButton(),
     ]);
-    
+
     // Wait for page to stabilize
     await this.waitForDomContentLoaded();
-    
+
     // Wait for network to be idle with extended timeout
     await this.page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       this.logger.warn('Network idle timeout - continuing anyway');
     });
-    
+
     this.logger.info('✓ Login successful and redirected');
   }
 
@@ -182,7 +182,7 @@ class LoginPage extends BasePage {
    */
   async getDialogMessageAndAccept() {
     return new Promise((resolve) => {
-      this.page.once('dialog', async dialog => {
+      this.page.once('dialog', async (dialog) => {
         const message = dialog.message();
         await dialog.accept();
         resolve(message);
@@ -195,7 +195,7 @@ class LoginPage extends BasePage {
    * @returns {Promise<void>}
    */
   async waitForRedirectToLogin() {
-    await this.page.waitForURL(url => url.toString().includes('/login'), { timeout: 15000 });
+    await this.page.waitForURL((url) => url.toString().includes('/login'), { timeout: 15000 });
     this.logger.info('✓ Redirected to login page');
   }
 }

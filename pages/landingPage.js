@@ -7,15 +7,15 @@ const LOCATORS = require('./constants/landingPage.constants');
 class LandingPage extends BasePage {
   constructor(page) {
     super(page);
-    
+
     // Page locators for SCS Landing Page
     this.scsRmcLink = LOCATORS.scsRmcLink;
     this.forgotPasswordLink = LOCATORS.forgotPasswordLink;
-    
+
     // SCSRMC page locators
     this.signInText = LOCATORS.signInText;
     this.needHelpText = LOCATORS.needHelpText;
-    
+
     // Forgot Password popup locators
     this.supportTitle = LOCATORS.supportTitle;
     this.instructionText = LOCATORS.instructionText;
@@ -29,18 +29,19 @@ class LandingPage extends BasePage {
   async clickScsRmcLink(context) {
     this.logger.info('Waiting for SCSRMC.COM link to be visible');
     await this.waitForElement(this.scsRmcLink, 10000);
-    
+
     this.logger.info('Clicking on SCSRMC.COM link');
     const [newPage] = await Promise.all([
       context.waitForEvent('page'),
-      this.click(this.scsRmcLink)
+      this.click(this.scsRmcLink),
     ]);
-    
+
     this.logger.info('New tab opened, waiting for page to load');
     await newPage.waitForLoadState('domcontentloaded');
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await newPage.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     await newPage.waitForLoadState('networkidle');
-    
+
     return newPage;
   }
 
@@ -61,7 +62,7 @@ class LandingPage extends BasePage {
    * @returns {Promise<boolean>} Visibility status
    */
   async isSignInTextVisible(page) {
-    return await page.locator(this.signInText).isVisible({ timeout: 10000 }).catch(() => false);
+    return page.locator(this.signInText).isVisible({ timeout: 10000 }).catch(() => false);
   }
 
   /**
@@ -70,7 +71,7 @@ class LandingPage extends BasePage {
    * @returns {Promise<boolean>} Visibility status
    */
   async isNeedHelpTextVisible(page) {
-    return await page.locator(this.needHelpText).isVisible({ timeout: 10000 }).catch(() => false);
+    return page.locator(this.needHelpText).isVisible({ timeout: 10000 }).catch(() => false);
   }
 
   /**
@@ -81,8 +82,9 @@ class LandingPage extends BasePage {
     await this.waitForElement(this.forgotPasswordLink, 10000);
     await this.click(this.forgotPasswordLink);
     this.logger.info('Clicked on Forgot username or password link');
-    
+
     // Wait for the support modal/section to appear instead of page navigation
+    // Intentionally suppress timeout - support title may not appear if already visible
     await this.page.locator(this.supportTitle).first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   }
 
@@ -92,7 +94,7 @@ class LandingPage extends BasePage {
    */
   async isSupportTitleVisible() {
     await this.page.locator(this.supportTitle).first().waitFor({ state: 'visible', timeout: 10000 });
-    return await this.page.locator(this.supportTitle).first().isVisible();
+    return this.page.locator(this.supportTitle).first().isVisible();
   }
 
   /**
@@ -104,7 +106,7 @@ class LandingPage extends BasePage {
     const emailLink = await this.page.locator('a[href*="support@scsetools.com"], a:has-text("support@scsetools.com")').isVisible({ timeout: 5000 }).catch(() => false);
     const phoneLink = await this.page.locator('a[href*="866-612-6820"], a:has-text("866-612-6820"), a:has-text("1-866-612-6820")').isVisible({ timeout: 5000 }).catch(() => false);
     const supportTextVisible = await this.page.locator('text=SCSeTools Customer Support').isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     return emailLink || phoneLink || supportTextVisible;
   }
 }

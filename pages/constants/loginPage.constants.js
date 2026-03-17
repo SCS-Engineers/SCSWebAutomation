@@ -14,5 +14,5 @@ module.exports = {
   loginPageTitle: 'h1, .login-title',
   usernameLabel: 'label:has-text("Username"), label:has-text("User Name")',
   passwordLabel: 'label:has-text("Password")',
-  validationMessage: '.validation-message, .field-validation-error'
+  validationMessage: '.validation-message, .field-validation-error',
 };

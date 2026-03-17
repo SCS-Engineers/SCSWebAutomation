@@ -4,7 +4,7 @@ module.exports = defineConfig({
   testDir: './test',
   timeout: 300000, // Increased to 300 seconds (5 minutes)
   expect: {
-    timeout: 30000 // Increased to 30 seconds
+    timeout: 30000, // Increased to 30 seconds
   },
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -15,10 +15,10 @@ module.exports = defineConfig({
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
-    ['allure-playwright', { outputFolder: 'allure-results' }]
+    ['allure-playwright', { outputFolder: 'allure-results' }],
   ],
   use: {
-    baseURL: 'https://ajs.scsetools.com',
+    baseURL: 'https://staging.scsetools.com',
     headless: false, // Run in headed mode
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -27,8 +27,8 @@ module.exports = defineConfig({
     launchOptions: {
       logger: {
         isEnabled: (name, severity) => name === 'api',
-        log: (name, severity, message, args) => console.log(`${name} ${message}`)
-      }
+        log: (name, severity, message, args) => console.log(`${name} ${message}`),
+      },
     },
     actionTimeout: 30000, // Maximum wait for actions
     navigationTimeout: 120000, // Maximum wait for navigation (2 minutes)
