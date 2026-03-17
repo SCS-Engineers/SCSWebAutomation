@@ -9,7 +9,7 @@ const logger = require('./logger');
  */
 const exportReportToPdf = async () => {
   const reportPath = path.join(__dirname, '..', 'beautiful-report', 'index.html');
-  
+
   // Check if report exists
   if (!fs.existsSync(reportPath)) {
     logger.error('❌ Report not found. Please run tests first: npm test');
@@ -17,16 +17,16 @@ const exportReportToPdf = async () => {
   }
 
   logger.info('📊 Converting Beautiful Report to PDF...');
-  
+
   const browser = await chromium.launch();
   const page = await browser.newPage();
-  
+
   // Navigate to the report
   await page.goto(`file:///${reportPath.replace(/\\/g, '/')}`);
-  
+
   // Wait for the report to load
   await page.waitForLoadState('networkidle');
-  
+
   // Generate PDF
   const pdfPath = path.join(__dirname, '..', 'beautiful-report', 'test-report.pdf');
   await page.pdf({
@@ -37,12 +37,12 @@ const exportReportToPdf = async () => {
       top: '10px',
       right: '10px',
       bottom: '10px',
-      left: '10px'
-    }
+      left: '10px',
+    },
   });
-  
+
   await browser.close();
-  
+
   logger.info(`✅ PDF report generated successfully: ${pdfPath}`);
 };
 

@@ -16,7 +16,10 @@
     "allure:generate": "allure generate allure-results --clean -o allure-report",
     "allure:open": "allure open allure-report",
     "allure:report": "npm run allure:generate && npm run allure:open",
-    "allure:pdf": "npm run allure:generate && node utils/exportAllureToPdf.js"
+    "allure:pdf": "npm run allure:generate && node utils/exportAllureToPdf.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "lint:report": "eslint . --ext .js --format html --output-file eslint-report.html"
   },
   "keywords": [
     "playwright",
@@ -30,6 +33,9 @@
     "allure-commandline": "2.36.0",
     "allure-playwright": "3.4.4",
     "dotenv": "17.2.3",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.32.0",
     "rimraf": "6.1.2",
     "winston": "3.19.0",
     "winston-daily-rotate-file": "5.0.0"

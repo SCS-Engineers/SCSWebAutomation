@@ -4,6 +4,15 @@ const logger = require('../../../utils/logger');
 const helper = require('../../../utils/helper');
 const testData = require('../../../data/testData.json');
 
+// Wait time constants for explicit timing requirements
+const WAIT_TIMES = {
+  ULTRA_SHORT: 300,
+  SHORT_DELAY: 500,
+  FILTER_DELAY: 1000,
+  MODAL_DELAY: 1500,
+  GRID_STABILIZATION: 2000,
+};
+
 test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
   let testSetup;
   let page;
@@ -13,32 +22,32 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.divider();
     logger.info('Setting up test - Initializing page objects');
     page = testPage;
-    
+
     testSetup = new TestSetup();
     await testSetup.initialize(page);
     siteStatusDashboardPage = testSetup.getSiteStatusDashboardPage();
-    
+
     logger.info('Test setup completed');
     logger.divider();
   });
 
   test('DS-SITE-STATUS-43 - Verify clicking on the Map column navigates the user to the DS Filter Map page in Surface Emissions', async ({ page }) => {
     logger.testStart('DS-SITE-STATUS-43 - Verify clicking on the Map column navigates the user to the DS Filter Map page in Surface Emissions');
-    
+
     await testSetup.loginAsValidUser();
     await page.waitForLoadState('networkidle');
     await testSetup.acknowledgeHealthAndSafety();
-    
+
     logger.step('Step 7: Navigate to the Surface Emissions tab');
     await siteStatusDashboardPage.navigateToSurfaceEmissionsTab();
-    
+
     logger.step('Step 8: Wait for network to be idle');
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(WAIT_TIMES.SHORT_DELAY);
     logger.info('✓ Network is idle after navigating to Surface Emissions tab');
-    
+
     // Filter by Site Name "aqabmtestsite1"
     logger.step('Filter by Site Name: aqabmtestsite1');
     await siteStatusDashboardPage.filterBySiteNameExact('aqabmtestsite1');
@@ -47,266 +56,268 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     // Verify only filtered results are displayed
     logger.step('Verify only filtered results are displayed');
     await siteStatusDashboardPage.verifySurfaceEmissionsFilteredResults(filteredSiteName);
-    
+
     logger.step('Step 10: Click the surface emissions map icon');
     await siteStatusDashboardPage.clickSurfaceEmissionsMapIcon();
-    
+
     logger.step('Step 11: Wait for navigation to complete');
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    await page.waitForTimeout(1000);
+    // Removed redundant wait - networkidle already ensures page stability
     logger.info('✓ Navigation completed');
-    
+
     logger.step('Step 12: Verify Filter Map toolbar item is active');
     await siteStatusDashboardPage.verifyFilterMapToolbarActive();
-    
+
     logger.step('Step 13: Verify Site Name is visible on the page');
     await siteStatusDashboardPage.verifySiteNameOnReportPage(filteredSiteName);
-    
+
     logger.step('Step 14: Verify date range combobox is visible and default is current month');
     const dateRangeCombobox = siteStatusDashboardPage.getDateRangeCombobox();
     await expect(dateRangeCombobox).toBeVisible();
-    
+
     await siteStatusDashboardPage.verifyAndAssertDateRangeIsCurrentMonth(dateRangeCombobox, expect);
-    
+
     logger.step('Step 15: Verify satellite imagery option is visible');
     await expect(siteStatusDashboardPage.getSatelliteImageryOption()).toBeVisible();
     logger.info('✓ Satellite imagery option is visible');
-    
+
     logger.step('Step 16: Verify street map option is visible');
     await expect(siteStatusDashboardPage.getStreetMapOption()).toBeVisible();
     logger.info('✓ Street map option is visible');
-    
+
     logger.step('Step 17: Verify MAP text is visible');
     await expect(siteStatusDashboardPage.getMapText()).toBeVisible();
     logger.info('✓ MAP text is visible');
-    
+
     logger.step('Step 18: Verify Filter is visible');
     await expect(siteStatusDashboardPage.getFilterText()).toBeVisible();
     logger.info('✓ Filter text is visible');
-    
+
     logger.testEnd('DS-SITE-STATUS-43 - Verify clicking on the Map column navigates the user to the DS Filter Map page in Surface Emissions', 'PASSED');
   });
 
   test('DS-SITE-STATUS-44 - Verify clicking on the Contact column opens the Contacts popup', async ({ page }) => {
     logger.testStart('DS-SITE-STATUS-44 - Verify clicking on the Contact column opens the Contacts popup');
-    
+
     const { expectedTabs } = testData.testData.siteStatusDashboard;
     const siteName = 'Demo Site';
-    
+
     await testSetup.loginAsValidUser();
     await page.waitForLoadState('networkidle');
     await testSetup.acknowledgeHealthAndSafety();
-    
+
     // Step 7: Navigate to the "Surface Emissions" tab
     logger.step('Step 7: Navigate to the Surface Emissions tab');
     await siteStatusDashboardPage.navigateToSurfaceEmissionsTab();
-    
+
     // Step 8: Wait for network to be idle
     logger.step('Step 8: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after navigating to Surface Emissions tab');
-    
+
     logger.step('Step 9: Filter by Site Name "Demo Site"');
     await siteStatusDashboardPage.filterBySiteNameExact(siteName);
     logger.info(`✓ Site Name saved as: ${siteName}`);
-    
+
     logger.step('Step 10: Click the first contact icon');
     await siteStatusDashboardPage.clickSurfaceEmissionsContactIcon();
-    
+
     logger.step('Step 11: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after clicking contact icon');
-    
+
     logger.step('Step 12: Verify a popup/modal is opened');
     await expect(page.locator('.e-dlg-header-content').first()).toBeVisible();
     logger.info('✓ Contacts popup is displayed');
-    
+
     logger.step(`Step 13: Verify popup title is "Site Contacts for site: ${siteName}"`);
     await expect(page.getByText(`Site Contacts for site: ${siteName}`)).toBeVisible();
     logger.info(`✓ Popup title contains "Site Contacts for site: ${siteName}"`);
-    
+
     logger.step('Step 14: Verify popup contains tabs: DATA APPROVERS, USERS WITH ACCESS, CONTACTS');
     await siteStatusDashboardPage.verifyPopupTabsAreVisible(expectedTabs);
     logger.info('✓ All expected tabs are visible in the popup');
-    
+
     logger.testEnd('DS-SITE-STATUS-44 - Verify clicking on the Contact column opens the Contacts popup', 'PASSED');
   });
 
   test('DS-SITE-STATUS-45 - Verify the content in the Contacts popup', async ({ page }) => {
     logger.testStart('DS-SITE-STATUS-45 - Verify the content in the Contacts popup');
-    
-    const { dataApproversColumns, usersWithAccessColumns, contactsColumns, tabLabels } = testData.testData.siteStatusDashboard;
+
+    const {
+      dataApproversColumns, usersWithAccessColumns, contactsColumns, tabLabels,
+    } = testData.testData.siteStatusDashboard;
     const siteName = 'Demo Site';
-    
+
     await testSetup.loginAsValidUser();
     await page.waitForLoadState('networkidle');
     await testSetup.acknowledgeHealthAndSafety();
-    
+
     logger.step('Step 7: Navigate to the Surface Emissions tab');
     await siteStatusDashboardPage.navigateToSurfaceEmissionsTab();
-    
+
     logger.step('Step 8: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after navigating to Surface Emissions tab');
-    
+
     logger.step('Step 9: Filter by Site Name "Demo Site"');
     await siteStatusDashboardPage.filterBySiteNameExact(siteName);
     logger.info(`✓ Site Name saved as: ${siteName}`);
-    
+
     logger.step('Step 10: Click the first contact icon');
     await siteStatusDashboardPage.clickSurfaceEmissionsContactIcon();
-    
+
     logger.step('Step 11: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after clicking contact icon');
-    
+
     logger.step('Step 12: Verify a popup/modal is opened');
     await expect(siteStatusDashboardPage.getDialogHeader()).toBeVisible();
     logger.info('✓ Contacts popup is displayed');
-    
+
     logger.step(`Step 13: Verify popup title is "Site Contacts for site: ${siteName}"`);
     await expect(siteStatusDashboardPage.getSiteContactsPopupTitle(siteName)).toBeVisible();
     logger.info(`✓ Popup title contains "Site Contacts for site: ${siteName}"`);
-    
+
     logger.step('Step 14: Verify columns in Data Approvers tab (default)');
     await siteStatusDashboardPage.getTabLocator('DATA APPROVERS').waitFor({ state: 'visible' });
     await siteStatusDashboardPage.verifyColumnHeaders(tabLabels.dataApprovers, dataApproversColumns);
     logger.info('✓ Data Approvers tab columns verified');
-    
+
     logger.step('Step 15: Verify columns in USERS WITH ACCESS tab');
     await siteStatusDashboardPage.clickTab('USERS WITH ACCESS');
     await siteStatusDashboardPage.verifyColumnHeaders(tabLabels.usersWithAccess, usersWithAccessColumns);
     logger.info('✓ Users With Access tab columns verified');
-    
+
     logger.step('Step 16: Verify columns in CONTACTS tab');
     await siteStatusDashboardPage.clickTab('CONTACTS');
     await siteStatusDashboardPage.verifyColumnHeaders(tabLabels.contacts, contactsColumns);
     logger.info('✓ Contacts tab columns verified');
-    
+
     logger.testEnd('DS-SITE-STATUS-45 - Verify the content in the Contacts popup', 'PASSED');
   });
 
   test('DS-SITE-STATUS-46 - Verify Last Logon Date Format in Contacts popup', async ({ page }) => {
     logger.testStart('DS-SITE-STATUS-46 - Verify Last Logon Date Format in Contacts popup');
-    
+
     const { dateTimePattern } = testData.testData.siteStatusDashboard;
     const siteName = 'Demo Site';
-    
+
     await testSetup.loginAsValidUser();
     await page.waitForLoadState('networkidle');
     await testSetup.acknowledgeHealthAndSafety();
-    
+
     // Step 7: Navigate to the "Surface Emissions" tab
     logger.step('Step 7: Navigate to the Surface Emissions tab');
     await siteStatusDashboardPage.navigateToSurfaceEmissionsTab();
-    
+
     // Step 8: Wait for network to be idle
     logger.step('Step 8: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after navigating to Surface Emissions tab');
-    
+
     // Step 9: Filter by Site Name "Demo Site"
     logger.step('Step 9: Filter by Site Name "Demo Site"');
     await siteStatusDashboardPage.filterBySiteNameExact(siteName);
     logger.info(`✓ Site Name saved as: ${siteName}`);
-    
+
     // Step 10: Click the first contact icon
     logger.step('Step 10: Click the first contact icon');
     await siteStatusDashboardPage.clickSurfaceEmissionsContactIcon();
-    
+
     // Step 11: Wait for network to be idle
     logger.step('Step 11: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after clicking contact icon');
-    
+
     // Step 12: Verify a popup/modal is opened
     logger.step('Step 12: Verify a popup/modal is opened');
     await expect(page.locator('.e-dlg-header-content').first()).toBeVisible();
     logger.info('✓ Contacts popup is displayed');
-    
+
     logger.step(`Step 13: Verify popup title is "Site Contacts for site: ${siteName}"`);
     await expect(page.getByText(`Site Contacts for site: ${siteName}`)).toBeVisible();
     logger.info(`✓ Popup title contains "Site Contacts for site: ${siteName}"`);
-    
+
     logger.step('Step 14: Grab first value from Last Logon column in Data Approvers tab');
     const lastLogonValue = await siteStatusDashboardPage.getLastLogonValue();
-    
+
     logger.step('Step 15: Verify Last Logon value matches format: MMM DD, YYYY HH:MM AM/PM');
-    
+
     expect(lastLogonValue).toBeTruthy();
     expect(lastLogonValue.trim().length).toBeGreaterThan(0);
     logger.info('✓ Last Logon value is not empty');
-    
+
     // Regex pattern from test data: MMM DD, YYYY HH:MM AM/PM (e.g., "Jan 16, 2026 4:29 PM")
     const datePattern = new RegExp(dateTimePattern);
     const isValidFormat = datePattern.test(lastLogonValue.trim());
-    
+
     logger.info(`Date-time format validation: ${isValidFormat}`);
     expect(isValidFormat).toBeTruthy();
     logger.info(`✓ Last Logon value "${lastLogonValue}" matches expected format MMM DD, YYYY HH:MM AM/PM`);
-    
+
     logger.testEnd('DS-SITE-STATUS-46 - Verify Last Logon Date Format in Contacts popup', 'PASSED');
   });
 
   test('DS-SITE-STATUS-47 - Verify user can close the Contacts popup using the Close button', async ({ page }) => {
     logger.testStart('DS-SITE-STATUS-47 - Verify user can close the Contacts popup using the Close button');
-    
+
     const siteName = 'Demo Site';
     const expectedPopupTitle = `Site Contacts for site: ${siteName}`;
-    
+
     await testSetup.loginAsValidUser();
     await page.waitForLoadState('networkidle');
     await testSetup.acknowledgeHealthAndSafety();
-    
+
     // Step 7: Navigate to the "Surface Emissions" tab
     logger.step('Step 7: Navigate to the Surface Emissions tab');
     await siteStatusDashboardPage.navigateToSurfaceEmissionsTab();
-    
+
     // Step 8: Wait for network to be idle
     logger.step('Step 8: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after navigating to Surface Emissions tab');
-    
+
     // Step 9: Filter by Site Name "Demo Site"
     logger.step('Step 9: Filter by Site Name "Demo Site"');
     await siteStatusDashboardPage.filterBySiteNameExact(siteName);
     logger.info(`✓ Site Name saved as: ${siteName}`);
-    
+
     // Wait for filter to be fully applied
     await page.waitForLoadState('networkidle');
     await page.waitForLoadState('networkidle');
-    
+
     // Step 10: Click the first contact icon
     logger.step('Step 10: Click the first contact icon');
     await siteStatusDashboardPage.clickSurfaceEmissionsContactIcon();
-    
+
     // Step 11: Wait for network to be idle
     logger.step('Step 11: Wait for network to be idle');
     await page.waitForLoadState('networkidle');
     logger.info('✓ Network is idle after clicking contact icon');
-    
+
     // Step 12: Verify a popup/modal is opened
     logger.step('Step 12: Verify a popup/modal is opened');
     await expect(page.locator('.e-dlg-header-content').first()).toBeVisible();
     logger.info('✓ Site Contacts popup is opened');
-    
+
     logger.step(`Step 13: Verify popup title is "${expectedPopupTitle}"`);
     await expect(page.getByText(expectedPopupTitle)).toBeVisible();
     logger.info(`✓ Popup title verified: "${expectedPopupTitle}"`);
-    
+
     logger.step('Step 14: Click the Close button on the popup');
     await siteStatusDashboardPage.clickCloseButton();
-    
+
     logger.step('Step 15: Verify the Site Contacts popup is closed');
     await expect(page.locator('.e-dlg-header-content').first()).not.toBeVisible();
     logger.info('✓ Site Contacts popup is closed');
-    
+
     logger.step('Step 16: Verify the popup title text is not visible');
     await expect(page.getByText(expectedPopupTitle)).not.toBeVisible();
     logger.info(`✓ Popup title "${expectedPopupTitle}" is not visible`);
-    
+
     logger.testEnd('DS-SITE-STATUS-47 - Verify user can close the Contacts popup using the Close button', 'PASSED');
   });
 
@@ -374,11 +385,11 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     const searchBox = page.getByRole('textbox', { name: 'Search' });
     await searchBox.waitFor({ state: 'visible', timeout: 5000 });
     await searchBox.fill('Demo Site');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(WAIT_TIMES.SHORT_DELAY);
 
     const excelFilter = page.getByLabel('Excel filter');
     await excelFilter.getByText('Select All', { exact: true }).click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(WAIT_TIMES.SHORT_DELAY);
 
     // Use getLabel selector for exact match of "Demo Site"
     try {
@@ -387,7 +398,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
       // Fallback: try clicking the label text directly
       await excelFilter.locator('label:text-is("Demo Site")').click({ timeout: 5000 });
     }
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(WAIT_TIMES.ULTRA_SHORT);
 
     await page.getByRole('button', { name: 'OK' }).click();
     await page.waitForLoadState('networkidle');
@@ -395,7 +406,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.step('Verify grid displays only one record with expected values');
     const visibleRows = await siteStatusDashboardPage.getVisibleRowCount();
     expect(visibleRows).toBe(1);
-    logger.info(`✓ Grid displays exactly 1 row after Site Name filter`);
+    logger.info('✓ Grid displays exactly 1 row after Site Name filter');
 
     const siteNameValues = await siteStatusDashboardPage.getSurfaceEmissionsColumnValuesByName('Site Name');
     const clientValuesAfter = await siteStatusDashboardPage.getSurfaceEmissionsColumnValuesByName('Client');
@@ -403,15 +414,15 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     expect(siteNameValues.length).toBe(1);
     expect(siteNameValues[0]).toBe('Demo Site');
-    logger.info(`✓ Site Name = Demo Site`);
+    logger.info('✓ Site Name = Demo Site');
 
     expect(clientValuesAfter.length).toBe(1);
     expect(clientValuesAfter[0]).toBe('Demo');
-    logger.info(`✓ Client = Demo`);
+    logger.info('✓ Client = Demo');
 
     expect(pmValuesAfter.length).toBe(1);
     expect(pmValuesAfter[0]).toBe('Demo PM');
-    logger.info(`✓ Project Manager = Demo PM`);
+    logger.info('✓ Project Manager = Demo PM');
 
     logger.testEnd('DS-SITE-STATUS-49 - Verify Grid Filtering by Column Names in Surface Emissions', 'PASSED');
   });
@@ -469,7 +480,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     logger.step('Locate first Open Exceedance and double-click to navigate');
     const { cell: firstOpenExceedanceCell } = await siteStatusDashboardPage.captureFirstSurfaceEmissionsOpenExceedanceWithYellowBar();
-    
+
     expect(firstOpenExceedanceCell).toBeTruthy();
     logger.info('✓ Located first Open Exceedance cell');
 
@@ -480,7 +491,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(WAIT_TIMES.FILTER_DELAY);
     await siteStatusDashboardPage.getReportDescriptionLocator().first().waitFor({ state: 'visible', timeout: 30000 });
     logger.info('✓ Report page loaded successfully');
 
@@ -488,32 +499,33 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    
+
     // Scroll down slightly to ensure filters are in viewport
     await page.evaluate(() => window.scrollBy(0, 200));
-    
+
     // Wait for report filters section to be fully visible
+    // Intentionally suppress timeout - report filters may already be visible
     await page.waitForSelector('text=REPORT FILTERS', { state: 'visible', timeout: 30000 }).catch(() => {});
 
     logger.step('Validate date range is within current month');
     await expect(siteStatusDashboardPage.getDateRangeCombobox()).toBeVisible();
-    
+
     const dateRangeText = await siteStatusDashboardPage.getDateRangeCombobox().inputValue().catch(() => '');
     logger.info(`Date range value: ${dateRangeText}`);
-    
+
     expect(dateRangeText.trim().length).toBeGreaterThan(0);
     logger.info(`✓ Date range is set: ${dateRangeText}`);
 
     logger.step('Validate Rule Category shows "Compliance"');
     // Wait for the dropdown container and text to appear
     await page.waitForSelector('text=Rule Category', { state: 'visible', timeout: 30000 });
-    
+
     // Try to get the Rule Category dropdown value using different methods
     const ruleCategoryLocator = page.locator('#rule-category-dropdown, [aria-label="Rule Category"]').first();
     await ruleCategoryLocator.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
       logger.warn('Rule Category dropdown not found with primary selector');
     });
-    
+
     // Check if Compliance is visible in the dropdown
     const complianceVisible = await page.locator('text=Compliance').first().isVisible().catch(() => false);
     if (complianceVisible) {
@@ -527,13 +539,14 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     logger.step('Scroll down to view "SEM Exceedance Detail Report: Instantaneous" below "Create Report"');
     await page.evaluate(() => window.scrollBy(0, 400));
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await page.waitForLoadState('networkidle').catch(() => {});
-    
+
     // Wait for the report title to appear
     await page.waitForSelector('text=SEM Exceedance Detail Report: Instantaneous', { state: 'visible', timeout: 30000 }).catch(() => {
       logger.warn('SEM Exceedance Detail Report text not found, may be in a different location');
     });
-    
+
     // Verify report title is visible
     const reportTitleVisible = await siteStatusDashboardPage.getSEMExceedanceDetailReportText().isVisible().catch(() => false);
     if (reportTitleVisible) {
@@ -575,7 +588,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     logger.step('Capture Open Exceedance value from dashboard');
     const { cell: firstOpenExceedanceCell, value: openExceedanceValue } = await siteStatusDashboardPage.captureFirstSurfaceEmissionsOpenExceedanceWithYellowBarAndValue();
-    
+
     expect(openExceedanceValue).toBeTruthy();
     expect(firstOpenExceedanceCell).toBeTruthy();
     logger.info(`✓ Captured Open Exceedance value from dashboard: ${openExceedanceValue}`);
@@ -591,19 +604,20 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     logger.step('Click arrow_drop_up button to collapse REPORT FILTERS');
     await siteStatusDashboardPage.getArrowDropUpButton().click();
-    
+
     logger.step('Wait for page to load after collapsing filters');
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle after collapsing filters, continuing...');
     });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(WAIT_TIMES.GRID_STABILIZATION);
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await page.waitForLoadState('networkidle').catch(() => {});
     logger.info('✓ Collapsed REPORT FILTERS section');
 
     logger.step('Verify "SEM Exceedance Detail Report: Instantaneous" is visible');
     // Scroll to make the element visible first
     await page.evaluate(() => window.scrollBy(0, 300));
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(WAIT_TIMES.GRID_STABILIZATION);
     await page.waitForLoadState('networkidle').catch(() => {});
     await expect(siteStatusDashboardPage.getSEMExceedanceDetailReportText()).toBeVisible({ timeout: 30000 });
     logger.info('✓ "SEM Exceedance Detail Report: Instantaneous" is visible');
@@ -611,21 +625,23 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.step('Scroll down to view "SEM Exceedance Detail Report: Instantaneous" content');
     await siteStatusDashboardPage.scrollToReportContent();
     await page.waitForLoadState('networkidle');
-    
+
     logger.step('Wait for Report Summary section to fully load');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(WAIT_TIMES.GRID_STABILIZATION);
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await page.waitForLoadState('networkidle').catch(() => {});
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await page.waitForLoadState('networkidle').catch(() => {});
-    
+
     await siteStatusDashboardPage.scrollToFindElement('Report Summary', 60);
     logger.info('✓ "Report Summary" section is visible');
 
     logger.step('Verify Open Exceedances value in Report equals dashboard value');
     const openExceedancesInReport = await siteStatusDashboardPage.getSEMOpenExceedancesReportValue();
-    
+
     logger.info(`Open Exceedances in Report: ${openExceedancesInReport}`);
     logger.info(`Open Exceedance value from dashboard: ${openExceedanceValue}`);
-    
+
     expect(openExceedancesInReport).toBeTruthy();
     expect(openExceedancesInReport).toBe(openExceedanceValue);
     logger.info(`✓ Open Exceedances in Report (${openExceedancesInReport}) equals Open Exceedance value from dashboard (${openExceedanceValue})`);
@@ -660,7 +676,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     });
 
     const { siteName, cell: targetReadingApprovalCell } = await siteStatusDashboardPage.findFirstSurfaceEmissionsReadingApprovalRequired();
-    
+
     expect(siteName).toBeTruthy();
     expect(targetReadingApprovalCell).toBeTruthy();
 
@@ -683,10 +699,10 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.step('Verify date range is within one year back from current date');
     const dateRangeCombobox = siteStatusDashboardPage.getSelectDateRangeCombobox();
     await expect(dateRangeCombobox).toBeVisible();
-    
+
     const dateRangeText = await dateRangeCombobox.inputValue().catch(() => '');
     logger.info(`Date range value: ${dateRangeText}`);
-    
+
     const dateValidation = helper.verifyDateRangeWithinOneYear(dateRangeText);
     expect(dateValidation.isValid).toBeTruthy();
     logger.info(`✓ ${dateValidation.message}`);
@@ -698,10 +714,10 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.step('Scroll down and verify "Unapproved only" radio button is selected');
     await page.evaluate(() => window.scrollBy(0, 300));
     await page.waitForLoadState('networkidle');
-    
+
     await expect(siteStatusDashboardPage.getUnapprovedOnlyLabel().first()).toBeVisible();
     logger.info('✓ "Unapproved only" option is visible');
-    
+
     const isUnapprovedSelected = await siteStatusDashboardPage.verifyUnapprovedOnlySelected();
     if (isUnapprovedSelected !== null) {
       expect(isUnapprovedSelected).toBeTruthy();
@@ -717,15 +733,15 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.step('Verify READINGS grid is visible');
     await page.evaluate(() => window.scrollBy(0, 300));
     await page.waitForLoadState('networkidle');
-    
+
     await expect(siteStatusDashboardPage.getReadingsLabel().first()).toBeVisible({ timeout: 10000 });
     logger.info('✓ READINGS grid is visible');
 
     logger.step('Verify readingGrid and readingGrid_content_table are visible');
-    
+
     await expect(siteStatusDashboardPage.getReadingGrid().first()).toBeVisible({ timeout: 10000 });
     logger.info('✓ readingGrid is visible');
-    
+
     await expect(siteStatusDashboardPage.getReadingGridContentTable().first()).toBeVisible({ timeout: 10000 });
     logger.info('✓ readingGrid_content_table is visible');
 
@@ -757,11 +773,12 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(WAIT_TIMES.FILTER_DELAY);
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await page.waitForLoadState('networkidle').catch(() => {});
 
     const { siteName, count: readingApprovalRequiredCount, cell: targetCell } = await siteStatusDashboardPage.captureFirstSurfaceEmissionsReadingApprovalRequiredCount();
-    
+
     expect(siteName).toBeTruthy();
     expect(readingApprovalRequiredCount).toBeTruthy();
     expect(targetCell).toBeTruthy();
@@ -775,7 +792,8 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(WAIT_TIMES.MODAL_DELAY);
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await page.waitForLoadState('networkidle').catch(() => {});
     await siteStatusDashboardPage.getReportInformationLocator().first().waitFor({ state: 'visible', timeout: 40000 });
     logger.info('✓ Review Edit page loaded successfully');
@@ -793,18 +811,19 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    
+
     await expect(siteStatusDashboardPage.getReadingsLabel().first()).toBeVisible({ timeout: 10000 });
     logger.info('✓ READINGS label is visible');
 
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(WAIT_TIMES.GRID_STABILIZATION);
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await page.waitForLoadState('networkidle').catch(() => {});
-    
+
     logger.step('Wait for reading grid to populate');
-    
+
     // Wait specifically for grid rows to appear
     await page.locator('#readingGrid .e-row, #readingGrid tr.e-row').first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
       logger.warn('Grid rows did not appear within timeout');
@@ -815,7 +834,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
 
     logger.step('Verify Reading Approval Required count equals READINGS count');
     const readingApprovalCountNum = parseInt(readingApprovalRequiredCount, 10);
-    
+
     expect(readingCount).toBe(readingApprovalCountNum);
     logger.info(`✓ Reading Approval Required count (${readingApprovalCountNum}) equals READINGS count (${readingCount})`);
 
@@ -877,7 +896,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     const requiredContent = [
       'Point Specific Monitoring',
       'Date Range :',
-      'Monitoring Requirement'
+      'Monitoring Requirement',
     ];
     await siteStatusDashboardPage.verifyReportContent(requiredContent);
 
@@ -939,7 +958,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     const requiredContent = [
       'Point Specific Monitoring',
       'Date Range :',
-      'Monitoring Requirement'
+      'Monitoring Requirement',
     ];
     await siteStatusDashboardPage.verifyReportContent(requiredContent);
 
@@ -1001,7 +1020,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     const requiredContent = [
       'Point Specific Monitoring',
       'Date Range :',
-      'Monitoring Requirement'
+      'Monitoring Requirement',
     ];
     await siteStatusDashboardPage.verifyReportContent(requiredContent);
 
@@ -1041,7 +1060,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       logger.info('Network did not go idle, continuing...');
     });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(WAIT_TIMES.FILTER_DELAY);
     logger.info('✓ Navigation completed');
 
     logger.step('Verify page contains "Point Specific Monitoring"');
@@ -1066,7 +1085,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     const requiredContent = [
       'Point Specific Monitoring',
       'Date Range :',
-      'Monitoring Requirement'
+      'Monitoring Requirement',
     ];
     await siteStatusDashboardPage.verifyReportContent(requiredContent);
 
@@ -1144,7 +1163,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.step('Locate Missed Readings column and capture value from span');
     const { value: missedReadingsValueText, siteName: savedSiteName, cell: targetCell } = await siteStatusDashboardPage.captureMissedReadingsFromSurfaceEmissions();
     const missedReadingsValue = parseInt(missedReadingsValueText.replace(/,/g, ''), 10);
-    
+
     expect(missedReadingsValue).toBeGreaterThan(0);
     expect(savedSiteName).toBeTruthy();
     expect(targetCell).toBeTruthy();
@@ -1172,7 +1191,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     logger.step('Verify pagination count equals Missed Readings value from dashboard');
     logger.info(`Missed Readings value from dashboard: ${missedReadingsValue}`);
     logger.info(`Pagination count from Missed Readings page: ${paginationCount}`);
-    
+
     expect(paginationCount).toBe(missedReadingsValue);
     logger.info(`✓ Pagination count (${paginationCount}) matches Missed Readings value (${missedReadingsValue})`);
 
@@ -1225,7 +1244,7 @@ test.describe('SCS Site Status Dashboard - Surface Emissions Tests', () => {
     const openExceedanceNumber = parseInt(openExceedanceValue.replace(/,/g, ''), 10);
     logger.info(`Open Exceedances value from dashboard: ${openExceedanceNumber}`);
     logger.info(`Instantaneous Exceedances count from Exceedance Manager: ${instantaneousExceedanceCount}`);
-    
+
     expect(instantaneousExceedanceCount).toBe(openExceedanceNumber);
     logger.info(`✓ Instantaneous Exceedances count (${instantaneousExceedanceCount}) matches Open Exceedances value (${openExceedanceNumber})`);
 

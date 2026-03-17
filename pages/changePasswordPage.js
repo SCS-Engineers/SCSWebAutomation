@@ -7,7 +7,7 @@ const LOCATORS = require('./constants/changePasswordPage.constants');
 class ChangePasswordPage extends BasePage {
   constructor(page) {
     super(page);
-    
+
     // Page locators for Change Password functionality
     this.usernameButton = LOCATORS.usernameButton;
     this.changePasswordMenuOption = LOCATORS.changePasswordMenuOption;
@@ -57,7 +57,7 @@ class ChangePasswordPage extends BasePage {
    */
   async isChangePasswordPopupVisible(timeout = 10000) {
     this.logger.info('Checking if Change Password popup is visible');
-    return await this.page.locator(this.changePasswordPopup).isVisible({ timeout }).catch(() => false);
+    return this.page.locator(this.changePasswordPopup).isVisible({ timeout }).catch(() => false);
   }
 
   /**
@@ -102,7 +102,7 @@ class ChangePasswordPage extends BasePage {
    */
   async isConfirmationDialogVisible(timeout = 5000) {
     this.logger.info('Checking if confirmation dialog is visible');
-    return await this.page.locator(this.confirmationText).isVisible({ timeout }).catch(() => false);
+    return this.page.locator(this.confirmationText).isVisible({ timeout }).catch(() => false);
   }
 
   /**
@@ -111,7 +111,7 @@ class ChangePasswordPage extends BasePage {
    */
   async getConfirmationDialogText() {
     this.logger.info('Getting confirmation dialog text');
-    return await this.page.locator(this.confirmationText).textContent();
+    return this.page.locator(this.confirmationText).textContent();
   }
 
   /**
@@ -121,7 +121,7 @@ class ChangePasswordPage extends BasePage {
    */
   async isToastMessageVisible(timeout = 10000) {
     this.logger.info('Checking if toast message is visible');
-    return await this.page.locator(this.toastMessage).isVisible({ timeout }).catch(() => false);
+    return this.page.locator(this.toastMessage).isVisible({ timeout }).catch(() => false);
   }
 
   /**
@@ -130,7 +130,7 @@ class ChangePasswordPage extends BasePage {
    */
   async getToastMessageText() {
     this.logger.info('Getting toast message text');
-    return await this.page.locator(this.toastMessage).textContent();
+    return this.page.locator(this.toastMessage).textContent();
   }
 
   /**
@@ -155,7 +155,7 @@ class ChangePasswordPage extends BasePage {
    */
   async isDashboardVisible() {
     this.logger.info('Checking if dashboard is visible');
-    return await this.page.locator(this.dashboardText).isVisible({ timeout: 5000 }).catch(() => false);
+    return this.page.locator(this.dashboardText).isVisible({ timeout: 5000 }).catch(() => false);
   }
 
   /**

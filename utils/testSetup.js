@@ -27,19 +27,19 @@ class TestSetup {
   async initialize(page) {
     logger.divider();
     logger.info('Setting up test - Initializing page objects');
-    
+
     this.loginPage = new LoginPage(page);
     this.siteStatusDashboardPage = new SiteStatusDashboardPage(page);
     this.changePasswordPage = new ChangePasswordPage(page);
     this.landingPage = new LandingPage(page);
     this.administrationUserPage = new AdministrationUserPage(page);
-    
+
     // Navigate to login page
     const loginUrl = credentials.getUrl('loginPage');
     logger.info(`Navigating to login page: ${loginUrl}`);
     await this.loginPage.navigate(loginUrl);
     await this.loginPage.waitForDomContentLoaded();
-    
+
     logger.info('Test setup completed');
     logger.divider();
   }

@@ -9,18 +9,14 @@ class Logger {
   constructor() {
     // Create logs directory if it doesn't exist
     const logsDir = path.join(process.cwd(), 'logs');
-    
+
     // Custom format for console output (matches original logger format)
-    const consoleFormat = winston.format.printf(({ level, message }) => {
-      return message;
-    });
+    const consoleFormat = winston.format.printf(({ level, message }) => message);
 
     // Custom format for file output (includes level and timestamp)
     const fileFormat = winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.printf(({ timestamp, level, message }) => {
-        return `${timestamp} [${level.toUpperCase()}] ${message}`;
-      })
+      winston.format.printf(({ timestamp, level, message }) => `${timestamp} [${level.toUpperCase()}] ${message}`),
     );
 
     // Configure Winston logger
@@ -30,7 +26,7 @@ class Logger {
         // Console transport (matching original output format)
         new winston.transports.Console({
           format: consoleFormat,
-          handleExceptions: true
+          handleExceptions: true,
         }),
         // Daily rotating file transport for all logs
         new DailyRotateFile({
@@ -39,7 +35,7 @@ class Logger {
           datePattern: 'YYYY-MM-DD',
           maxSize: '20m',
           maxFiles: '14d',
-          format: fileFormat
+          format: fileFormat,
         }),
         // Separate file for errors only
         new DailyRotateFile({
@@ -49,9 +45,9 @@ class Logger {
           level: 'error',
           maxSize: '20m',
           maxFiles: '30d',
-          format: fileFormat
-        })
-      ]
+          format: fileFormat,
+        }),
+      ],
     });
   }
 
@@ -143,11 +139,11 @@ class Logger {
 
   /**
    * Get current timestamp
-   * @returns {string} Formatted timestamp
+   * @returns {string} Formatted timestamp (YYYY-MM-DD HH:mm:ss)
    */
   getTimestamp() {
     const now = new Date();
-    return now.toISOString().replace('T', ' ').substr(0, 19);
+    return now.toISOString().replace('T', ' ').substring(0, 19);
   }
 
   /**

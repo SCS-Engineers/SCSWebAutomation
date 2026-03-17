@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const TIMEOUTS = require('./constants/timeouts');
 
 /**
  * Base Page class with common methods for all pages
@@ -15,31 +16,31 @@ class BasePage {
    */
   async navigateTo(url) {
     this.logger.action(`Navigating to URL: ${url}`);
-    
+
     // Retry logic for navigation
-    const maxRetries = 3;
+    const maxRetries = TIMEOUTS.MAX_RETRIES;
     let lastError;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await this.page.goto(url, { 
-          waitUntil: 'domcontentloaded', 
-          timeout: 120000 // Increased to 120 seconds (2 minutes)
+        await this.page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 120000, // Increased to 120 seconds (2 minutes)
         });
-        
+
         // Wait for network to be idle after navigation
         await this.page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
           this.logger.info('Network did not go idle within timeout after navigation');
         });
-        
+
         this.logger.info(`Successfully navigated to: ${url}`);
         return; // Success, exit the function
       } catch (error) {
         lastError = error;
         this.logger.warn(`Navigation attempt ${attempt}/${maxRetries} failed: ${error.message}`);
-        
+
         if (attempt < maxRetries) {
-          this.logger.info(`Retrying navigation...`);
+          this.logger.info('Retrying navigation...');
           // Wait for page to be in a stable state before retrying
           await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch((err) => {
             this.logger.debug(`DOM state wait failed: ${err.message}`);
@@ -47,7 +48,7 @@ class BasePage {
         }
       }
     }
-    
+
     // If all retries failed, throw the last error
     throw new Error(`Failed to navigate to ${url} after ${maxRetries} attempts: ${lastError.message}`);
   }
@@ -58,7 +59,7 @@ class BasePage {
    * @returns {Promise<void>}
    */
   async click(selector) {
-    this.logger.action(`Clicking on element`, selector);
+    this.logger.action('Clicking on element', selector);
     await this.page.click(selector);
     this.logger.info(`Successfully clicked: ${selector}`);
   }
@@ -70,7 +71,7 @@ class BasePage {
    * @returns {Promise<void>}
    */
   async fill(selector, text) {
-    this.logger.action(`Filling text in element`, selector);
+    this.logger.action('Filling text in element', selector);
     await this.page.fill(selector, text);
     this.logger.info(`Successfully filled text in: ${selector}`);
   }
@@ -81,7 +82,7 @@ class BasePage {
    * @returns {Promise<string>} Element text
    */
   async getText(selector) {
-    this.logger.action(`Getting text from element`, selector);
+    this.logger.action('Getting text from element', selector);
     const text = await this.page.textContent(selector);
     this.logger.info(`Retrieved text: "${text}" from ${selector}`);
     return text;
@@ -93,7 +94,7 @@ class BasePage {
    * @returns {Promise<boolean>} Visibility status
    */
   async isVisible(selector) {
-    this.logger.action(`Checking visibility of element`, selector);
+    this.logger.action('Checking visibility of element', selector);
     const visible = await this.page.isVisible(selector);
     this.logger.info(`Element ${selector} visibility: ${visible}`);
     return visible;
@@ -106,7 +107,7 @@ class BasePage {
    * @returns {Promise<void>}
    */
   async waitForElement(selector, timeout = 30000) {
-    this.logger.action(`Waiting for element to be visible`, selector);
+    this.logger.action('Waiting for element to be visible', selector);
     await this.page.waitForSelector(selector, { state: 'visible', timeout });
     this.logger.info(`Element is now visible: ${selector}`);
   }
@@ -139,7 +140,7 @@ class BasePage {
    * @returns {Promise<string>} Page title
    */
   async getTitle() {
-    return await this.page.title();
+    return this.page.title();
   }
 
   /**
@@ -265,8 +266,8 @@ class BasePage {
    * @returns {Promise<string[]>} Array of text contents
    */
   async getAllTexts(selector) {
-    this.logger.action(`Getting all text contents from elements`, selector);
-    const texts = await this.page.$$eval(selector, elements => elements.map(el => el.textContent.trim()));
+    this.logger.action('Getting all text contents from elements', selector);
+    const texts = await this.page.$$eval(selector, (elements) => elements.map((el) => el.textContent.trim()));
     this.logger.info(`Retrieved ${texts.length} text contents from ${selector}`);
     return texts;
   }
@@ -277,7 +278,7 @@ class BasePage {
    * @param {number} timeout - Timeout in milliseconds
    */
   async waitForURL(urlPattern, timeout = 30000) {
-    this.logger.action(`Waiting for URL to match pattern`, urlPattern);
+    this.logger.action('Waiting for URL to match pattern', urlPattern);
     await this.page.waitForURL(urlPattern, { timeout });
     this.logger.info(`URL matched pattern: ${urlPattern}`);
   }
@@ -288,7 +289,7 @@ class BasePage {
    * @returns {Promise<string>} Inner text
    */
   async getInnerText(selector) {
-    this.logger.action(`Getting inner text from element`, selector);
+    this.logger.action('Getting inner text from element', selector);
     const text = await this.page.innerText(selector);
     this.logger.info(`Retrieved inner text: "${text}" from ${selector}`);
     return text;
@@ -300,7 +301,7 @@ class BasePage {
    * @returns {Promise<number>} Number of elements found
    */
   async getElementCount(selector) {
-    this.logger.action(`Counting elements`, selector);
+    this.logger.action('Counting elements', selector);
     const count = await this.page.locator(selector).count();
     this.logger.info(`Found ${count} elements matching ${selector}`);
     return count;
@@ -322,12 +323,12 @@ class BasePage {
    */
   async logout() {
     this.logger.action('Logging out from application');
-    
+
     try {
       // Check if there's a direct Logout button visible (some user types)
       const directLogoutButton = this.page.locator('button.btn-logout.scs-logout-btn');
       const buttonCount = await directLogoutButton.count();
-      
+
       if (buttonCount > 0 && await directLogoutButton.isVisible()) {
         await directLogoutButton.click();
         this.logger.info('✓ Clicked direct Logout button');
@@ -337,19 +338,19 @@ class BasePage {
         await userMenuButton.waitFor({ state: 'visible', timeout: 10000 });
         await userMenuButton.click();
         this.logger.info('✓ Clicked user menu button');
-        
+
         // Wait for menu to appear
         await this.page.waitForTimeout(1000);
-        
+
         // Click logout button using specific class selector
         await this.page.locator('button.btn-logout.scs-logout-btn').click({ timeout: 5000 });
         this.logger.info('✓ Clicked logout button');
       }
-      
+
       // Wait for redirect to login page
-      await this.page.waitForURL(url => url.toString().includes('/login'), { timeout: 15000 });
+      await this.page.waitForURL((url) => url.toString().includes('/login'), { timeout: 15000 });
       this.logger.info('✓ Redirected to login page');
-      
+
       // Wait for Log In button to be visible to confirm page is fully loaded
       await this.page.getByRole('button', { name: 'Log In', exact: true }).waitFor({ state: 'visible', timeout: 10000 });
       this.logger.info('✓ Successfully logged out - Log In button is visible');
@@ -365,40 +366,40 @@ class BasePage {
    * @returns {Promise<string[]>} Array of site names
    */
   async getSitesFromDropdown(dropdownId = null) {
-    this.logger.action(`Getting sites from dropdown${dropdownId ? ': ' + dropdownId : ''}`);
-    
+    this.logger.action(`Getting sites from dropdown${dropdownId ? `: ${dropdownId}` : ''}`);
+
     try {
       // Use specific ID if provided, otherwise auto-detect the sites dropdown
-      const dropdown = dropdownId 
+      const dropdown = dropdownId
         ? this.page.locator(`#${dropdownId}`)
         : this.page.locator('[role="combobox"]').first();
-      
+
       await dropdown.waitFor({ state: 'visible', timeout: 10000 });
       await dropdown.click();
-      this.logger.info(`✓ Opened sites dropdown`);
-      
+      this.logger.info('✓ Opened sites dropdown');
+
       // Wait for dropdown list to appear
       await this.page.waitForTimeout(1000);
-      
+
       // Get all list items
       const listItems = this.page.locator('.e-list-item, li[role="option"]').filter({ hasNotText: /^$/ });
       await listItems.first().waitFor({ state: 'visible', timeout: 5000 });
-      
+
       // Get all text contents at once
       const sites = (await listItems.allTextContents())
-        .map(text => text.trim())
-        .filter(text => text.length > 0);
-      
+        .map((text) => text.trim())
+        .filter((text) => text.length > 0);
+
       this.logger.info(`✓ Found ${sites.length} sites: ${sites.join(', ')}`);
-      
+
       // Close dropdown by pressing Escape
       await this.page.keyboard.press('Escape');
-      
+
       // Wait for dropdown list to close
       await listItems.first().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {
         this.logger.info('Dropdown list may already be closed');
       });
-      
+
       return sites;
     } catch (error) {
       this.logger.error(`Failed to get sites from dropdown: ${error.message}`);
@@ -413,24 +414,24 @@ class BasePage {
    * @returns {Promise<void>}
    */
   async verifySitesInDropdown(dropdownId, expectedSites) {
-    this.logger.action(`Verifying sites in dropdown${dropdownId ? ': ' + dropdownId : ''}`);
-    
+    this.logger.action(`Verifying sites in dropdown${dropdownId ? `: ${dropdownId}` : ''}`);
+
     const actualSites = await this.getSitesFromDropdown(dropdownId);
-    
+
     // Check if all expected sites are present
-    const missingSites = expectedSites.filter(site => !actualSites.includes(site));
-    const extraSites = actualSites.filter(site => !expectedSites.includes(site));
-    
+    const missingSites = expectedSites.filter((site) => !actualSites.includes(site));
+    const extraSites = actualSites.filter((site) => !expectedSites.includes(site));
+
     if (missingSites.length > 0) {
       this.logger.error(`Missing sites: ${missingSites.join(', ')}`);
       throw new Error(`Expected sites not found: ${missingSites.join(', ')}`);
     }
-    
+
     if (extraSites.length > 0) {
       this.logger.warn(`Extra sites found: ${extraSites.join(', ')}`);
     }
-    
-    this.logger.info(`✓ All expected sites are present in dropdown`);
+
+    this.logger.info('✓ All expected sites are present in dropdown');
   }
 
   /**
@@ -440,15 +441,15 @@ class BasePage {
    */
   async verifyErrorMessage(expectedMessage) {
     this.logger.action(`Verifying error message: "${expectedMessage}"`);
-    
-   try {
+
+    try {
       // Wait for error message to appear
       const errorLocator = this.page.locator(`text=${expectedMessage}`);
       await errorLocator.waitFor({ state: 'visible', timeout: 10000 });
-      
+
       const actualMessage = await errorLocator.textContent();
       this.logger.info(`✓ Error message displayed: "${actualMessage}"`);
-      
+
       if (!actualMessage.includes(expectedMessage)) {
         throw new Error(`Expected message "${expectedMessage}" but got "${actualMessage}"`);
       }

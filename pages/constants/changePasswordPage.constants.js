@@ -14,5 +14,5 @@ module.exports = {
   yesButton: 'button:has-text("Yes")',
   noButton: 'button:has-text("No")',
   toastMessage: '[role="alert"]',
-  dashboardText: 'text=Dashboard'
+  dashboardText: 'text=Dashboard',
 };

@@ -13,22 +13,22 @@ const logger = require('./logger');
 /**
  * Get environment variable with fallback
  * @param {string} key - Environment variable key
- * @param {*} fallback - Fallback value if env var not found
- * @param {boolean} warnIfMissing - Whether to log warning if missing (default: false)
- * @returns {*} Environment variable value or fallback
+ * @param {string|null} fallback - Fallback value if env var not found
+ * @param {boolean} shouldWarnIfMissing - Whether to log warning if missing (default: false)
+ * @returns {string|null} Environment variable value or fallback
  */
-const getEnvVar = (key, fallback = null, warnIfMissing = false) => {
+const getEnvVar = (key, fallback = null, shouldWarnIfMissing = false) => {
   const value = process.env[key];
-  
+
   if (value === undefined || value === '') {
     if (fallback !== null) return fallback;
-    
-    if (warnIfMissing) {
+
+    if (shouldWarnIfMissing) {
       logger.warn(`Environment variable ${key} is not set. Using fallback from testData.json if available.`);
     }
     return null;
   }
-  
+
   return value;
 };
 
@@ -42,7 +42,7 @@ const buildUserCredentials = (prefix, fallback = {}) => ({
   username: getEnvVar(`${prefix}_USERNAME`, fallback.username, true),
   password: getEnvVar(`${prefix}_PASSWORD`, fallback.password, true),
   firstName: getEnvVar(`${prefix}_FIRSTNAME`, fallback.firstName, false),
-  lastName: getEnvVar(`${prefix}_LASTNAME`, fallback.lastName, false)
+  lastName: getEnvVar(`${prefix}_LASTNAME`, fallback.lastName, false),
 });
 
 // Build users object with environment variables taking precedence
@@ -55,13 +55,13 @@ const users = {
   invalidBoth: buildUserCredentials('INVALID_BOTH', testData.users.invalidBoth),
   pwuser16: buildUserCredentials('PWUSER16', testData.users.pwuser16),
   pwuser17: buildUserCredentials('PWUSER17', testData.users.pwuser17),
-  pwautomationu2: buildUserCredentials('PWAUTOMATIONU2', testData.users.pwautomationu2)
+  pwautomationu2: buildUserCredentials('PWAUTOMATIONU2', testData.users.pwautomationu2),
 };
 
 // Build URLs object with environment variables taking precedence
 const testUrls = {
   loginPage: getEnvVar('LOGIN_PAGE_URL', testData.testUrls.loginPage, true),
-  homePage: getEnvVar('HOME_PAGE_URL', testData.testUrls.homePage, true)
+  homePage: getEnvVar('HOME_PAGE_URL', testData.testUrls.homePage, true),
 };
 
 // Build test data with environment variables for sensitive data
@@ -70,8 +70,8 @@ const enhancedTestData = {
   changePassword: {
     initialPassword: getEnvVar('CHANGE_PASSWORD_INITIAL', testData.testData.changePassword?.initialPassword, true),
     newPassword: getEnvVar('CHANGE_PASSWORD_NEW', testData.testData.changePassword?.newPassword, true),
-    invalidPassword: getEnvVar('CHANGE_PASSWORD_INVALID', testData.testData.changePassword?.invalidPassword, true)
-  }
+    invalidPassword: getEnvVar('CHANGE_PASSWORD_INVALID', testData.testData.changePassword?.invalidPassword, true),
+  },
 };
 
 module.exports = {
@@ -122,6 +122,5 @@ module.exports = {
    */
   getPassword(userType = 'validUser') {
     return this.users[userType].password;
-  }
+  },
 };
-

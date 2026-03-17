@@ -8,5 +8,5 @@ module.exports = {
   signInText: 'text=Sign in to your account',
   needHelpText: 'text=Need help',
   supportTitle: 'text=Support',
-  instructionText: 'text=contact your system administrator, text=support@scsetools.com, text=1-866-612-6820'
+  instructionText: 'text=contact your system administrator, text=support@scsetools.com, text=1-866-612-6820',
 };

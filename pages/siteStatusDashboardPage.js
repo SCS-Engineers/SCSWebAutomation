@@ -1,5 +1,5 @@
-const BasePage = require('./basePage');
 const { expect } = require('@playwright/test');
+const BasePage = require('./basePage');
 const LOCATORS = require('./constants/siteStatusDashboardPage.constants');
 
 /**
@@ -8,7 +8,7 @@ const LOCATORS = require('./constants/siteStatusDashboardPage.constants');
 class SiteStatusDashboardPage extends BasePage {
   constructor(page) {
     super(page);
-    
+
     // Page locators for Site Status Dashboard - Based on reference code
     this.healthSafetyOkButton = LOCATORS.healthSafetyOkButton;
     this.siteCombobox = LOCATORS.siteCombobox;
@@ -20,30 +20,30 @@ class SiteStatusDashboardPage extends BasePage {
     this.streetMapOption = LOCATORS.streetMapOption;
     this.mapText = LOCATORS.mapText;
     this.filterText = LOCATORS.filterText;
-    
+
     // Fallback locators
     this.healthSafetyModal = LOCATORS.healthSafetyModal;
     this.siteListItem = LOCATORS.siteListItem;
     this.siteSearchInput = LOCATORS.siteSearchInput;
     this.mapIcon = LOCATORS.mapIcon;
     this.filterMapContainer = LOCATORS.filterMapContainer;
-    
+
     // Popup/Dialog locators
     this.popupHeaderSelector = LOCATORS.popupHeaderSelector;
     this.closeButtonSelector = LOCATORS.closeButtonSelector;
-    
+
     // Grid locators
     this.gridRows = LOCATORS.gridRows;
     this.filterIconSelector = LOCATORS.filterIconSelector;
     this.filterSearchInput = LOCATORS.filterSearchInput;
     this.excelFilterLabel = LOCATORS.excelFilterLabel;
     this.selectAllText = LOCATORS.selectAllText;
-    
+
     // Status color locators
     this.statusTextColor = LOCATORS.statusTextColor;
     this.yellowStatusBar = LOCATORS.yellowStatusBar;
     this.orangeStatusBar = LOCATORS.orangeStatusBar;
-    
+
     // Report page locators
     this.reportFiltersText = LOCATORS.reportFiltersText;
     this.reportInformationText = LOCATORS.reportInformationText;
@@ -51,7 +51,7 @@ class SiteStatusDashboardPage extends BasePage {
     this.exceedanceDetailReportText = LOCATORS.exceedanceDetailReportText;
     this.arrowDropUpButton = LOCATORS.arrowDropUpButton;
     this.openExceedancesReportTextBox = LOCATORS.openExceedancesReportTextBox;
-    
+
     // Review Edit page locators
     this.reviewEditToolbar = LOCATORS.reviewEditToolbar;
     this.operationsToolbar = LOCATORS.operationsToolbar;
@@ -60,29 +60,29 @@ class SiteStatusDashboardPage extends BasePage {
     this.readingsCountLabel = LOCATORS.readingsCountLabel;
     this.presetDropdownId = LOCATORS.presetDropdownId;
     this.createReportButton = LOCATORS.createReportButton;
-    
+
     // Pagination locators
     this.paginationCountMsg = LOCATORS.paginationCountMsg;
-    
+
     // Filter menu locators
     this.filterMenuSearchInputSelector = LOCATORS.filterMenuSearchInputSelector;
     this.okButtonSelector = LOCATORS.okButtonSelector;
-    
+
     // Grid row selectors
     this.landfillGridRows = LOCATORS.landfillGridRows;
     this.liquidLevelsGridRows = LOCATORS.liquidLevelsGridRows;
-    
+
     // Review Edit page specific locators
     this.readingsLabelSelector = LOCATORS.readingsLabelSelector;
     this.readingGridSelector = LOCATORS.readingGridSelector;
     this.readingGridContentTableSelector = LOCATORS.readingGridContentTableSelector;
     this.unapprovedOnlyLabelSelector = LOCATORS.unapprovedOnlyLabelSelector;
-    
+
     // Report page specific locators
     this.reportDescriptionSelector = LOCATORS.reportDescriptionSelector;
     this.ruleCategoryDropdownSelector = LOCATORS.ruleCategoryDropdownSelector;
     this.ruleNameSelector = LOCATORS.ruleNameSelector;
-    
+
     // Point Specific Monitoring Report locators
     this.pointsSpecificMonitoringReportTitle = LOCATORS.pointsSpecificMonitoringReportTitle;
     this.datePickerInputSelector = LOCATORS.datePickerInputSelector;
@@ -150,7 +150,7 @@ class SiteStatusDashboardPage extends BasePage {
    * @returns {string[]} Normalized values
    */
   normalizeValues(values) {
-    return values.map(v => v.trim().toLowerCase());
+    return values.map((v) => v.trim().toLowerCase());
   }
 
   /**
@@ -223,13 +223,13 @@ class SiteStatusDashboardPage extends BasePage {
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const filterIcon = header.locator(this.filterIconSelector);
-    
-    // Wait for grid to stabilize before accessing filter  
+
+    // Wait for grid to stabilize before accessing filter
     await this.page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
       this.logger.info('Network did not go idle before filter click, continuing...');
     });
     await this.page.waitForTimeout(500);
-    
+
     // Wait for filter icon with extended timeout and retry
     try {
       await filterIcon.waitFor({ state: 'visible', timeout: 30000 });
@@ -241,7 +241,8 @@ class SiteStatusDashboardPage extends BasePage {
       await this.page.waitForTimeout(1000);
       await filterIcon.click({ force: true, timeout: 10000 });
     }
-    
+
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
   }
 
@@ -252,25 +253,26 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async filterBySearch(columnName, searchValue) {
     this.logger.step(`Filter by ${columnName}: Search "${searchValue}"`);
-    
+
     await this.clickFilterIcon(columnName);
     await this.waitForGridLoad(1500);
-    
+
     // Find and fill the search input
     const filterSearchInput = this.getFilterMenuSearchInput();
     await filterSearchInput.waitFor({ state: 'visible', timeout: 10000 });
     await filterSearchInput.fill(searchValue);
     await this.waitForGridLoad(1500);
-    
+
     // Click OK to apply (search auto-selects matching items)
     const okButton = this.getOkButton();
     await okButton.waitFor({ state: 'visible', timeout: 10000 });
     await okButton.click();
-    
+
     // Wait for network idle and extra time for grid to refresh
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await this.page.waitForLoadState('networkidle').catch(() => {});
     await this.waitForGridLoad(2000);
-    
+
     this.logger.info(`✓ Filter applied: ${columnName} contains "${searchValue}"`);
   }
 
@@ -299,46 +301,47 @@ class SiteStatusDashboardPage extends BasePage {
   async filterBySiteNameExact(siteName) {
     this.logger.info(`Filtering by Site Name: ${siteName}`);
     await this.page.waitForLoadState('networkidle');
-    
+
     await this.clickFilterIcon('Site Name');
-    
+
     const excelFilter = this.page.getByLabel(this.excelFilterLabel);
-    
+
     // First, search for the specific site name
     const searchBox = this.page.getByRole('textbox', { name: 'Search' });
     await searchBox.waitFor({ state: 'visible', timeout: 5000 });
     await searchBox.fill(siteName);
     await this.page.waitForTimeout(500);
-    
+
     // Then click "Select All" to deselect all items
     await excelFilter.getByText(this.selectAllText, { exact: true }).waitFor({ state: 'visible', timeout: 30000 });
     await excelFilter.getByText(this.selectAllText, { exact: true }).click();
     await this.page.waitForTimeout(500);
-    
+
     // Now click only the specific site name
     await excelFilter.getByText(siteName, { exact: true }).click();
     await this.page.waitForTimeout(500);
-    
+
     // Wait for OK button to be enabled before clicking
     const okButton = this.page.getByRole('button', { name: 'OK' });
     await okButton.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Wait for the filter to process and enable OK button
+    // Intentionally suppress timeout - DOM load state is optimal but not required
     await this.page.waitForLoadState('domcontentloaded', { timeout: 2000 }).catch(() => {});
-    
+
     // Wait for OK button to become enabled (critical - button starts disabled)
     await this.page.waitForFunction(
       () => {
-        const btn = document.querySelector('button[aria-label="OK"]') || 
-                    Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'OK');
+        const btn = document.querySelector('button[aria-label="OK"]')
+                    || Array.from(document.querySelectorAll('button')).find((b) => b.textContent === 'OK');
         return btn && !btn.disabled;
       },
-      { timeout: 15000 }
+      { timeout: 15000 },
     );
-    
+
     await okButton.click();
     await this.page.waitForLoadState('networkidle');
-    
+
     this.logger.info(`✓ Site Name filter applied: ${siteName}`);
   }
 
@@ -349,25 +352,26 @@ class SiteStatusDashboardPage extends BasePage {
   async filterBySiteNameSearch(siteName) {
     this.logger.info(`Filtering by Site Name (search): ${siteName}`);
     await this.page.waitForLoadState('networkidle');
-    
+
     await this.clickFilterIcon('Site Name');
     await this.page.waitForTimeout(500);
-    
+
     const searchInput = this.page.locator(this.filterSearchInput);
     await searchInput.waitFor({ state: 'visible', timeout: 10000 });
     await searchInput.fill(siteName);
     await this.page.waitForTimeout(500);
-    
+
     // Wait for OK button to be enabled before clicking
     const okButton = this.page.getByRole('button', { name: 'OK' });
     await okButton.waitFor({ state: 'visible', timeout: 10000 });
+    // Intentionally suppress timeout - button enablement check is optional
     await this.page.waitForFunction(
       () => !document.querySelector('button[aria-label="OK"]')?.disabled,
-      { timeout: 10000 }
+      { timeout: 10000 },
     ).catch(() => {});
     await okButton.click();
     await this.page.waitForLoadState('networkidle');
-    
+
     this.logger.info(`✓ Site Name filter applied: ${siteName}`);
   }
 
@@ -380,28 +384,28 @@ class SiteStatusDashboardPage extends BasePage {
   async captureOpenExceedanceValue() {
     const rows = this.page.locator(this.gridRows);
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     const openExceedancesHeader = this.getHeader('Open Exceedences');
     await openExceedancesHeader.waitFor({ state: 'visible', timeout: 10000 });
     const openExceedancesColIndex = await this.getColumnIndex(openExceedancesHeader);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const exceedanceCell = row.locator('td').nth(openExceedancesColIndex);
         const statusTextElement = exceedanceCell.locator(this.statusTextColor);
         const statusTextCount = await statusTextElement.count();
-        
+
         if (statusTextCount > 0) {
           const value = (await statusTextElement.first().innerText()).trim();
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
-          
+
           this.logger.info(`✓ Captured Open Exceedance value: ${value}`);
           this.logger.info(`✓ Captured Site Name: ${siteName}`);
           return { value, cell: exceedanceCell, siteName };
@@ -418,24 +422,24 @@ class SiteStatusDashboardPage extends BasePage {
   async captureFirstOpenExceedanceWithYellowBar() {
     const rows = this.page.locator(this.gridRows);
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     const openExceedencesHeader = this.getHeader('Open Exceedences');
     await openExceedencesHeader.waitFor({ state: 'visible', timeout: 10000 });
     const openExceedencesColIndex = await this.getColumnIndex(openExceedencesHeader);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const exceedanceCell = row.locator('td').nth(openExceedencesColIndex);
         const yellowBar = exceedanceCell.locator(this.yellowStatusBar);
         const yellowBarCount = await yellowBar.count();
-        
+
         if (yellowBarCount > 0) {
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
@@ -454,40 +458,44 @@ class SiteStatusDashboardPage extends BasePage {
   async captureReadingApprovalRequired() {
     const rows = this.page.locator(this.gridRows);
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const readingApprovalHeader = this.getHeader('Reading Approval Required');
     await readingApprovalHeader.waitFor({ state: 'visible', timeout: 10000 });
     const readingApprovalColIndex = await this.getColumnIndex(readingApprovalHeader);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const readingApprovalCell = row.locator('td').nth(readingApprovalColIndex);
         const spans = readingApprovalCell.locator('span');
         const spanCount = await spans.count();
-        
+
         if (spanCount > 0) {
           const firstSpan = spans.first();
           const cellText = await firstSpan.innerText().catch(() => '');
           const count = parseInt(cellText.trim(), 10) || 0;
-          
+
           if (count > 0) {
             const siteNameCell = row.locator('td').nth(siteNameColIndex);
             const siteName = (await siteNameCell.innerText()).trim();
-            
+
             this.logger.info(`✓ Found Reading Approval Required count: ${count}`);
             this.logger.info(`✓ Captured Site Name: ${siteName}`);
-            return { count, siteName, row, colIndex: readingApprovalColIndex };
+            return {
+              count, siteName, row, colIndex: readingApprovalColIndex,
+            };
           }
         }
       }
     }
-    return { count: 0, siteName: '', row: null, colIndex: -1 };
+    return {
+      count: 0, siteName: '', row: null, colIndex: -1,
+    };
   }
 
   /**
@@ -498,28 +506,28 @@ class SiteStatusDashboardPage extends BasePage {
   async captureOrangeStatusValue(columnName) {
     const rows = this.page.locator(this.gridRows);
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const columnHeader = this.getHeader(columnName);
     await columnHeader.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(columnHeader);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const cell = row.locator('td').nth(colIndex);
         const orangeStatusSpan = cell.locator(`${this.orangeStatusBar} span`);
         const spanCount = await orangeStatusSpan.count();
-        
+
         if (spanCount > 0) {
           const value = (await orangeStatusSpan.first().innerText()).trim();
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
-          
+
           this.logger.info(`✓ Found ${columnName} value: ${value}`);
           this.logger.info(`✓ Captured Site Name: ${siteName}`);
           return { value, cell, siteName };
@@ -536,16 +544,16 @@ class SiteStatusDashboardPage extends BasePage {
   async captureMissedReadingsValue() {
     const rows = this.page.locator(this.gridRows);
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const missedReadingsHeader = this.getHeader('Missed Readings');
     await missedReadingsHeader.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(missedReadingsHeader);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -554,22 +562,26 @@ class SiteStatusDashboardPage extends BasePage {
           .or(cell.locator('div.ng-star-inserted span'))
           .or(cell.locator('span'));
         const spanCount = await spanElement.count();
-        
+
         if (spanCount > 0) {
           const value = (await spanElement.first().innerText()).trim();
-          
+
           if (value && value.length > 0) {
             const valueNumber = parseInt(value.replace(/,/g, ''), 10);
             const siteNameCell = row.locator('td').nth(siteNameColIndex);
             const siteName = (await siteNameCell.innerText()).trim();
-            
+
             this.logger.info(`✓ Found Missed Readings value: ${value}`);
-            return { value, valueNumber, cell, siteName };
+            return {
+              value, valueNumber, cell, siteName,
+            };
           }
         }
       }
     }
-    return { value: '', valueNumber: 0, cell: null, siteName: '' };
+    return {
+      value: '', valueNumber: 0, cell: null, siteName: '',
+    };
   }
 
   // ==================== NAVIGATION METHODS ====================
@@ -633,28 +645,30 @@ class SiteStatusDashboardPage extends BasePage {
   async scrollToReportSummary() {
     const reportSummaryLocator = this.page.locator(this.reportSummaryText);
     const maxScrollAttempts = 50;
-    
+
     for (let i = 0; i < maxScrollAttempts; i++) {
       if (await reportSummaryLocator.isVisible().catch(() => false)) {
         this.logger.info('✓ Found Report Summary');
         break;
       }
-      
+
       await this.page.evaluate(() => {
         window.scrollBy(0, 300);
         const containers = document.querySelectorAll('[class*="report"], [class*="page"], form, [role="group"]');
-        containers.forEach(container => {
+        containers.forEach((container) => {
           if (container.scrollHeight > container.clientHeight) {
             container.scrollTop += 300;
           }
         });
         const iframes = document.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
+        iframes.forEach((iframe) => {
           try {
             if (iframe.contentDocument) {
               iframe.contentDocument.documentElement.scrollTop += 300;
             }
-          } catch (e) {}
+          } catch (e) {
+            // Intentionally suppress error - cross-origin iframe access may be restricted
+          }
         });
       });
       await this.page.waitForLoadState('networkidle');
@@ -755,24 +769,24 @@ class SiteStatusDashboardPage extends BasePage {
     let paginationCount = 0;
     let retryCount = 0;
     const maxRetries = 60;
-    
+
     // Wait for initial page load
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch((err) => {
       this.logger.warn(`Network idle timeout in getPaginationCount: ${err.message}`);
     });
-    
+
     while (retryCount < maxRetries) {
       // Try multiple locator strategies for pagination
       const paginationSummary = this.page.locator(this.paginationCountMsg)
         .or(this.page.locator('[class*="pagecountmsg"]'))
         .or(this.page.locator('.e-pagercontainer span').filter({ hasText: /\d+\s*items?/i }))
         .or(this.page.locator('span:has-text("items")').filter({ hasText: /\(\d+.*items?\)/ }));
-      
+
       const isVisible = await paginationSummary.first().isVisible({ timeout: 3000 }).catch(() => false);
       if (isVisible) {
         const paginationText = await paginationSummary.first().innerText();
         this.logger.info(`Pagination text found: ${paginationText}`);
-        
+
         // Try multiple regex patterns
         let paginationCountMatch = paginationText.match(/\(?([\d,]+)\s*items?\)?/i);
         if (!paginationCountMatch) {
@@ -783,23 +797,23 @@ class SiteStatusDashboardPage extends BasePage {
         } else if (paginationCountMatch[1]) {
           paginationCount = parseInt(paginationCountMatch[1].replace(/,/g, ''), 10);
         }
-        
+
         if (paginationCount > 0) {
           this.logger.info(`✓ Pagination count: ${paginationCount}`);
           break;
         }
       }
-      
+
       retryCount++;
       if (retryCount < maxRetries) {
         await this.page.waitForTimeout(1000);
       }
     }
-    
+
     if (paginationCount === 0) {
       this.logger.warn('Could not find pagination count after retries');
     }
-    
+
     return paginationCount;
   }
 
@@ -810,37 +824,38 @@ class SiteStatusDashboardPage extends BasePage {
   async getReadingsCount() {
     // Wait for the grid to load after Create Report is clicked
     await this.page.waitForLoadState('networkidle');
-    
+
     // Additional wait for readings grid to populate
     await this.page.waitForTimeout(2000);
-    
+
     // Wait for network to stabilize after grid loads
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
       this.logger.info('Network did not stabilize, continuing...');
     });
-    
+
     // Look for READINGS label with count in format "READINGS (123)" or just the count text
     const readingsLocator = this.page.locator('text=READINGS').or(this.page.locator('text=Readings'));
     await readingsLocator.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     // Try to find the count next to READINGS - it could be in various formats
     const readingsParent = readingsLocator.first().locator('..');
     const parentText = await readingsParent.innerText().catch(() => '');
-    
+
     // Look for pattern (number) in the text
     let match = parentText.match(/\((\d+)\)/);
     if (match) {
       const count = parseInt(match[1], 10);
       // Wait for preset dropdown to be ready before returning
       await this.page.waitForTimeout(1000);
+      // Intentionally suppress timeout - DOM load state is optimal but not required
       await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
       return count;
     }
-    
+
     // Alternative: Look for a span/element with just the count near READINGS
     const countLabel = this.page.locator('.readings-count, #readings-count, [class*="count"]')
       .filter({ hasText: /^\(\d+\)$/ });
-    
+
     const countVisible = await countLabel.first().isVisible().catch(() => false);
     if (countVisible) {
       const countText = await countLabel.first().innerText();
@@ -849,18 +864,20 @@ class SiteStatusDashboardPage extends BasePage {
         const count = parseInt(match[1], 10);
         // Wait for preset dropdown to be ready before returning
         await this.page.waitForTimeout(1000);
+        // Intentionally suppress timeout - DOM load state is optimal but not required
         await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
         return count;
       }
     }
-    
+
     // Fallback: count rows in the reading grid
     const gridRows = this.page.locator('#readingGrid .e-row, #readingGrid tr.e-row');
     const rowCount = await gridRows.count();
     this.logger.info(`Fallback: Counting grid rows = ${rowCount}`);
-    
+
     // Wait for preset dropdown to be ready before returning
     await this.page.waitForTimeout(1000);
+    // Intentionally suppress timeout - DOM load state is optimal but not required
     await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
     return rowCount;
   }
@@ -873,26 +890,26 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async selectPresetAndGetCount(presetName, currentPresetName) {
     this.logger.info(`Selecting preset: ${presetName}`);
-    
+
     // Wait for page to stabilize before looking for dropdown
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
       this.logger.info('Network did not go idle before selecting preset');
     });
     await this.page.waitForTimeout(1500);
-    
+
     // Use more robust selector strategy - same as used in DS-SITE-STATUS-14
     const presetDropdown = this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard')
       .filter({ hasText: currentPresetName })
       .or(this.page.getByRole('combobox', { name: currentPresetName }))
       .or(this.page.locator(this.presetDropdownId));
-    
+
     await presetDropdown.first().waitFor({ state: 'visible', timeout: 20000 });
     await presetDropdown.first().click();
     await this.page.waitForTimeout(1000);
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch((err) => {
       this.logger.debug(`Network idle timeout after preset dropdown click: ${err.message}`);
     });
-    
+
     const presetOption = this.page.getByRole('option', { name: presetName, exact: true });
     await presetOption.waitFor({ state: 'visible', timeout: 10000 });
     await presetOption.click();
@@ -900,12 +917,12 @@ class SiteStatusDashboardPage extends BasePage {
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch((err) => {
       this.logger.debug(`Network idle timeout after preset selection: ${err.message}`);
     });
-    
+
     await this.clickCreateReport();
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch((err) => {
       this.logger.debug(`Network idle timeout after create report: ${err.message}`);
     });
-    
+
     const count = await this.getReadingsCount();
     this.logger.info(`✓ ${presetName} count: ${count}`);
     return count;
@@ -988,14 +1005,14 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info(`Entering "${optionName}" in search box for ${dialogName}`);
     // Wait for the dropdown dialog to be visible and get the combobox inside it
     await this.page.waitForLoadState('networkidle');
-    
+
     const combobox = this.page.getByRole('dialog', { name: dialogName }).getByRole('combobox');
     await combobox.waitFor({ state: 'visible', timeout: 10000 });
     await combobox.fill(optionName);
-    
+
     // Wait for the dropdown to filter results based on the search term
     await this.page.waitForLoadState('networkidle');
-    
+
     // Wait for the option to become visible after filtering
     this.logger.info(`Clicking option: ${optionName}`);
     const option = this.page.getByRole('option', { name: optionName, exact: true });
@@ -1047,12 +1064,12 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Clicking surface emissions map icon');
     // Wait for the grid to be visible and for rows to load
     await this.page.waitForLoadState('networkidle');
-    
+
     // Try to find visible map buttons - get all and filter for visible ones
     const mapButtons = this.page.locator('button[title="Map"]');
     const count = await mapButtons.count();
     this.logger.info(`Found ${count} map buttons total`);
-    
+
     // Find the first visible map button
     for (let i = 0; i < count; i++) {
       const button = mapButtons.nth(i);
@@ -1064,7 +1081,7 @@ class SiteStatusDashboardPage extends BasePage {
         return;
       }
     }
-    
+
     // If no visible map button found, throw error
     throw new Error('No visible map buttons found in Surface Emissions grid');
   }
@@ -1079,7 +1096,7 @@ class SiteStatusDashboardPage extends BasePage {
     const contactButtons = this.page.locator('button[title="Contacts"]');
     const count = await contactButtons.count();
     this.logger.info(`Found ${count} contact buttons total`);
-    
+
     // Find the first visible contact button
     for (let i = 0; i < count; i++) {
       const button = contactButtons.nth(i);
@@ -1091,7 +1108,7 @@ class SiteStatusDashboardPage extends BasePage {
         return;
       }
     }
-    
+
     throw new Error('No visible contact buttons found in Surface Emissions grid');
   }
 
@@ -1264,43 +1281,42 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async getFirstSiteName() {
     this.logger.info('Getting first site name from Site Name column');
-    
+
     try {
       // Wait for the grid to be visible
       await this.page.waitForSelector('table tbody tr', { timeout: 10000 });
-      
+
       // Try to get site name from the first row of data
       const firstRow = this.page.locator('table tbody tr').first();
       const cells = await firstRow.locator('td').all();
-      
+
       for (const cell of cells) {
         const text = await cell.textContent();
         const trimmedText = text ? text.trim() : '';
-        
+
         // Look for text that looks like a site name (contains "site" or is alphanumeric)
-        if (trimmedText && 
-            trimmedText.length > 2 && 
-            !trimmedText.includes('Command') &&
-            !trimmedText.includes('icon') &&
-            (trimmedText.toLowerCase().includes('site') || /^[a-zA-Z0-9_-]+$/.test(trimmedText))) {
+        if (trimmedText
+            && trimmedText.length > 2
+            && !trimmedText.includes('Command')
+            && !trimmedText.includes('icon')
+            && (trimmedText.toLowerCase().includes('site') || /^[a-zA-Z0-9_-]+$/.test(trimmedText))) {
           this.logger.info(`First site name: ${trimmedText}`);
           return trimmedText;
         }
       }
-      
+
       this.logger.info('Could not find site name in first attempt, trying alternative selectors');
-      
+
       // Alternative: try to get text from specific column
       const siteCell = await firstRow.locator('td').nth(1).textContent();
       if (siteCell && siteCell.trim()) {
         this.logger.info(`First site name (from 2nd column): ${siteCell.trim()}`);
         return siteCell.trim();
       }
-      
     } catch (error) {
       this.logger.error(`Error getting site name: ${error.message}`);
     }
-    
+
     this.logger.info('Could not find site name');
     return 'site-single'; // Default fallback
   }
@@ -1328,9 +1344,9 @@ class SiteStatusDashboardPage extends BasePage {
       '[role="dialog"] h1',
       '[role="dialog"] h2',
       '[role="dialog"] .title',
-      '.e-dialog-header'
+      '.e-dialog-header',
     ];
-    
+
     for (const selector of titleSelectors) {
       try {
         const title = await this.page.locator(selector).first().textContent();
@@ -1343,7 +1359,7 @@ class SiteStatusDashboardPage extends BasePage {
         continue;
       }
     }
-    
+
     this.logger.info('Could not find popup title');
     return '';
   }
@@ -1355,18 +1371,18 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyPopupTabs(expectedTabs) {
     this.logger.info(`Verifying popup contains tabs: ${expectedTabs.join(', ')}`);
-    
+
     for (const tabName of expectedTabs) {
       const tabSelector = `[role="tab"]:has-text("${tabName}"), .tab:has-text("${tabName}"), .e-tab-text:has-text("${tabName}")`;
       const isVisible = await this.page.locator(tabSelector).first().isVisible();
-      
+
       if (!isVisible) {
         this.logger.info(`Tab "${tabName}" not found`);
         return false;
       }
       this.logger.info(`✓ Tab "${tabName}" found`);
     }
-    
+
     this.logger.info('All expected tabs verified successfully');
     return true;
   }
@@ -1382,9 +1398,9 @@ class SiteStatusDashboardPage extends BasePage {
       '.popup-close',
       '.e-dlg-closeicon-btn',
       'button:has-text("Close")',
-      'button:has-text("×")'
+      'button:has-text("×")',
     ];
-    
+
     for (const selector of closeSelectors) {
       try {
         const closeButton = this.page.locator(selector).first();
@@ -1398,7 +1414,7 @@ class SiteStatusDashboardPage extends BasePage {
         continue;
       }
     }
-    
+
     this.logger.info('Close button not found or popup already closed');
   }
 
@@ -1530,7 +1546,7 @@ class SiteStatusDashboardPage extends BasePage {
         this.logger.info(`Successfully clicked map icon for site: ${siteName}`);
       } catch (error) {
         // Fallback: try alternative selector patterns
-        this.logger.info(`Primary selector failed, trying alternative selectors`);
+        this.logger.info('Primary selector failed, trying alternative selectors');
         const altSelector = `tr:has-text("${siteName}") td:has(i.fa-map), tr:has-text("${siteName}") td button:has-text("Map")`;
         await this.click(altSelector);
         this.logger.info(`Successfully clicked map icon for site: ${siteName} using alternative selector`);
@@ -1573,7 +1589,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async getSelectedSiteFromRibbon() {
     this.logger.info('Getting selected site from ribbon selector');
-    
+
     // Try multiple strategies to get the site name
     try {
       // Strategy 1: Check for selected option in dropdown
@@ -1586,7 +1602,7 @@ class SiteStatusDashboardPage extends BasePage {
     } catch (error) {
       this.logger.info('Dropdown selector not found, trying text element');
     }
-    
+
     try {
       // Strategy 2: Get text from site ribbon display element
       const siteText = await this.getText(this.siteRibbonText);
@@ -1595,7 +1611,7 @@ class SiteStatusDashboardPage extends BasePage {
     } catch (error) {
       this.logger.info('Site ribbon text element not found, trying generic selector');
     }
-    
+
     // Strategy 3: Generic fallback
     const genericSelector = '.site-selector, [class*="site"]';
     const siteText = await this.getText(genericSelector);
@@ -1641,20 +1657,20 @@ class SiteStatusDashboardPage extends BasePage {
   async isDateRangeCurrentMonth() {
     this.logger.info('Verifying date range is set to current month');
     const dateRange = await this.getCurrentDateRange();
-    
+
     // Get current month and year
     const now = new Date();
     const currentMonth = now.toLocaleString('default', { month: 'long' });
     const currentYear = now.getFullYear();
     const shortMonth = now.toLocaleString('default', { month: 'short' });
-    
+
     // Check if date range contains current month/year in various formats
-    const containsMonth = dateRange.includes(currentMonth) || 
-                         dateRange.includes(shortMonth) ||
-                         dateRange.includes(currentMonth.toLowerCase()) ||
-                         dateRange.includes(shortMonth.toLowerCase());
+    const containsMonth = dateRange.includes(currentMonth)
+                         || dateRange.includes(shortMonth)
+                         || dateRange.includes(currentMonth.toLowerCase())
+                         || dateRange.includes(shortMonth.toLowerCase());
     const containsYear = dateRange.includes(currentYear.toString());
-    
+
     const isCurrentMonth = containsMonth && containsYear;
     this.logger.info(`Date range verification: ${isCurrentMonth} (Current: ${currentMonth} ${currentYear}, Range: ${dateRange})`);
     return isCurrentMonth;
@@ -1666,7 +1682,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async waitForFilterMapPage(timeout = 30000) {
     this.logger.info('Waiting for Filter Map page to load');
-    await this.page.waitForURL(url => url.includes('filter-map') || url.includes('filtermap'), { timeout });
+    await this.page.waitForURL((url) => url.includes('filter-map') || url.includes('filtermap'), { timeout });
     await this.page.waitForLoadState('domcontentloaded');
     this.logger.info('Filter Map page loaded successfully');
   }
@@ -1760,34 +1776,34 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async clickPopupTabByText(tabName) {
     this.logger.info(`Clicking popup tab: "${tabName}"`);
-    
+
     // Use .e-tab-text class selector since the tab has role="presentation", not role="tab"
     const tabLocator = this.page.locator('.e-tab-text').filter({ hasText: tabName });
     await tabLocator.waitFor({ state: 'visible', timeout: 30000 });
     await tabLocator.click();
     this.logger.info(`Clicked on popup tab "${tabName}"`);
-    
+
     // Wait for network and DOM to stabilize
     await this.page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {});
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
-    
+
     // Wait for the tabpanel to exist and be visible
     const tabPanel = this.page.getByRole('tabpanel', { name: tabName });
     await tabPanel.waitFor({ state: 'visible', timeout: 45000 });
-    
+
     // Wait for grid/table structure to be present
     const gridLocator = tabPanel.locator('.e-grid, .e-gridcontent, table, [role="grid"]').first();
     await gridLocator.waitFor({ state: 'visible', timeout: 45000 }).catch(() => {
       this.logger.info('Grid not found in tabpanel, continuing...');
     });
-    
+
     // Wait for table headers to render
     await tabPanel.getByRole('columnheader').first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
-    
+
     // Additional wait for all content to fully render
     await this.page.waitForTimeout(2000);
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
-    
+
     this.logger.info(`Successfully clicked and verified popup tab "${tabName}" is visible`);
   }
 
@@ -1798,17 +1814,17 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyColumnHeaders(tabLabel, expectedColumns) {
     this.logger.info(`Verifying column headers in "${tabLabel}" tab`);
-    
+
     // Get the specific tabpanel first
     const tabPanel = this.page.getByRole('tabpanel', { name: tabLabel });
-    
+
     // Dynamic wait: Wait for first column header in THIS specific tabpanel
     await tabPanel.getByRole('columnheader').first().waitFor({ state: 'attached', timeout: 60000 });
-    
+
     // Wait for table to fully render
     await this.page.waitForTimeout(2000);
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
-    
+
     // Verify all columns
     for (const column of expectedColumns) {
       const columnHeader = tabPanel.getByRole('columnheader', { name: column, exact: true });
@@ -1823,28 +1839,28 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyAccessExpirationColumnVisible() {
     this.logger.action('Verifying Access Expiration column is visible in Users With Access tab');
-    
+
     // Get the specific tabpanel (note: tabpanel name is title case "Users With Access")
     const tabPanel = this.page.getByRole('tabpanel', { name: 'Users With Access' });
-    
+
     // Wait for the tabpanel itself to be visible first
     await tabPanel.waitFor({ state: 'visible', timeout: 30000 });
-    
+
     // Wait for grid content to load
     await this.page.waitForLoadState('networkidle').catch(() => {});
     await this.page.waitForTimeout(3000);
-    
+
     // Wait for first column header in this specific tabpanel to be attached
     await tabPanel.getByRole('columnheader').first().waitFor({ state: 'attached', timeout: 60000 });
-    
+
     // Wait for table to fully render
     await this.page.waitForTimeout(2000);
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
-    
+
     // Verify Access Expiration column within the tabpanel
     const accessExpirationColumn = tabPanel.getByRole('columnheader', { name: 'Access Expiration', exact: true });
     await accessExpirationColumn.waitFor({ state: 'visible', timeout: 30000 });
-    
+
     this.logger.info('✓ Access Expiration column is visible');
   }
 
@@ -1856,48 +1872,50 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyUserAccessExpirationDate(userFirstName, datePattern) {
     this.logger.action(`Verifying Access Expiration date for user: ${userFirstName}`);
-    
+
     // Get the specific tabpanel (note: tabpanel name is title case "Users With Access")
     const tabPanel = this.page.getByRole('tabpanel', { name: 'Users With Access' });
-    
+
     // Wait for grid to load within the tabpanel
+    // Intentionally suppress timeout - networkidle state is optimal but not required
     await this.page.waitForLoadState('networkidle').catch(() => {});
     await this.page.waitForTimeout(3000);
-    
+
     // Wait for grid rows to be present in the tabpanel
     const gridRows = tabPanel.locator('tr.e-row, tr');
     await gridRows.first().waitFor({ state: 'attached', timeout: 30000 });
-    this.logger.info(`✓ Grid rows loaded in Users With Access tab`);
-    
+    this.logger.info('✓ Grid rows loaded in Users With Access tab');
+
     // Find the row with the user's first name within the tabpanel
     const userRow = gridRows.filter({ hasText: userFirstName }).first();
     await userRow.waitFor({ state: 'visible', timeout: 30000 });
+    // Intentionally suppress error - element may already be in view
     await userRow.scrollIntoViewIfNeeded().catch(() => {});
-    
+
     this.logger.info(`✓ Found user row for: ${userFirstName}`);
-    
+
     // Get all cells in the row
     const cells = userRow.locator('td');
     const cellCount = await cells.count();
     this.logger.info(`Found ${cellCount} cells in user row`);
-    
+
     // Access Expiration is the last column
     const accessExpirationCell = cells.last();
-    
+
     // Scroll the cell into view
     await accessExpirationCell.scrollIntoViewIfNeeded().catch(() => {});
     await accessExpirationCell.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Get the value
     const accessExpirationValue = (await accessExpirationCell.textContent()).trim();
     this.logger.info(`Access Expiration value: "${accessExpirationValue}"`);
-    
+
     // Verify format matches expected pattern
     const regex = new RegExp(datePattern);
     if (!regex.test(accessExpirationValue)) {
       throw new Error(`Access Expiration date "${accessExpirationValue}" does not match expected format. Pattern: ${datePattern}`);
     }
-    
+
     this.logger.info(`✓ Access Expiration date is in correct format: ${accessExpirationValue}`);
     return accessExpirationValue;
   }
@@ -1908,30 +1926,30 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async getLastLogonValue() {
     this.logger.info('Getting Last Logon value from Data Approvers tab');
-    
+
     // Ensure we're on Data Approvers tab
     await this.page.getByRole('tab', { name: 'DATA APPROVERS' }).waitFor({ state: 'visible' });
-    
+
     // Verify Last Logon column header exists
     const lastLogonColumn = this.page.getByLabel('Data Approvers').getByRole('columnheader', { name: 'Last Logon', exact: true });
     await lastLogonColumn.waitFor({ state: 'visible' });
     this.logger.info('✓ Last Logon column header found');
-    
+
     // Get the first row in the Data Approvers grid
     const dataApproversGrid = this.page.getByLabel('Data Approvers');
     const firstRow = dataApproversGrid.locator('tr.e-row').first();
     await firstRow.waitFor({ state: 'visible' });
-    
+
     // Get all cells in the first row
     const cells = firstRow.locator('td');
     const cellCount = await cells.count();
     this.logger.info(`Found ${cellCount} cells in first row`);
-    
+
     // Last Logon is the 12th column (index 11)
     const lastLogonCell = cells.nth(11);
     await lastLogonCell.waitFor({ state: 'visible' });
     const lastLogonValue = await lastLogonCell.innerText();
-    
+
     this.logger.info(`Last Logon value captured: ${lastLogonValue}`);
     return lastLogonValue;
   }
@@ -2007,7 +2025,7 @@ class SiteStatusDashboardPage extends BasePage {
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -2041,7 +2059,7 @@ class SiteStatusDashboardPage extends BasePage {
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -2059,7 +2077,9 @@ class SiteStatusDashboardPage extends BasePage {
             this.logger.info(`✓ Found Missed Readings value (text): ${valueText}`);
             this.logger.info(`✓ Found Missed Readings value (number): ${valueNumber}`);
             this.logger.info(`✓ Captured Site Name: ${siteName}`);
-            return { valueText, valueNumber, siteName, cell: missedReadingsCell };
+            return {
+              valueText, valueNumber, siteName, cell: missedReadingsCell,
+            };
           }
         }
       }
@@ -2100,27 +2120,27 @@ class SiteStatusDashboardPage extends BasePage {
       }
       return null;
     });
-    
+
     if (isChecked !== null) {
       this.logger.info(`✓ "Show unresolved only" checkbox is ${isChecked ? 'checked' : 'not checked'}`);
       return isChecked;
     } else {
       // Fallback: wait for page load and then check visibility
       await this.page.waitForLoadState('networkidle');
-      
+
       const showUnresolvedLabel = this.page.locator('text=Show unresolved only').or(
-        this.page.locator('text=show unresolved only')
+        this.page.locator('text=show unresolved only'),
       ).or(
-        this.page.locator('text=Unresolved')
+        this.page.locator('text=Unresolved'),
       );
       const isVisible = await showUnresolvedLabel.first().isVisible().catch(() => false);
       this.logger.info(`✓ "Show unresolved only" option is visible: ${isVisible}`);
-      
+
       // If element found but checkbox state unknown, assume it's working
       if (isVisible) {
         return true;
       }
-      
+
       // Final fallback - the page loaded successfully which indicates the feature works
       const pageTitle = this.page.locator('text=MISSED READINGS').or(this.page.locator('text=Missed Readings'));
       const titleVisible = await pageTitle.first().isVisible().catch(() => false);
@@ -2136,12 +2156,14 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info(`Verifying Point Types checkboxes: ${pointTypes.join(', ')}`);
     for (const type of pointTypes) {
       const checkbox = this.page.locator('.e-list-container').locator('[aria-checked="true"]').filter({ hasText: new RegExp(type, 'i') }).or(
-        this.page.locator('.e-list-container').locator('.e-check').filter({ hasText: new RegExp(type, 'i') })
-      ).or(
-        this.page.locator('.e-list-container li').filter({ hasText: new RegExp(type, 'i') }).locator('.e-check')
-      ).or(
-        this.page.locator('.e-list-container').locator(`li:has-text("${type}") .e-check`)
-      );
+        this.page.locator('.e-list-container').locator('.e-check').filter({ hasText: new RegExp(type, 'i') }),
+      )
+        .or(
+          this.page.locator('.e-list-container li').filter({ hasText: new RegExp(type, 'i') }).locator('.e-check'),
+        )
+        .or(
+          this.page.locator('.e-list-container').locator(`li:has-text("${type}") .e-check`),
+        );
       const isChecked = await checkbox.first().isVisible({ timeout: 5000 }).catch(() => false);
       if (isChecked) {
         this.logger.info(`✓ "${type}" checkbox is checked under Point Types`);
@@ -2159,12 +2181,12 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Verifying report contains required content');
     await this.page.evaluate(() => window.scrollBy(0, 300));
     await this.page.waitForLoadState('networkidle');
-    
+
     for (const content of requiredContent) {
       const contentLocator = this.page.locator(`text=${content}`).or(
         this.page.locator(`text=${content.replace(' :', ':')}`).or(
-          this.page.locator(`text=${content.replace(':', ' :')}`)
-        )
+          this.page.locator(`text=${content.replace(':', ' :')}`),
+        ),
       );
       let isVisible = await contentLocator.first().isVisible({ timeout: 5000 }).catch(() => false);
       if (!isVisible) {
@@ -2193,7 +2215,7 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyDateFieldDefaulted() {
     this.logger.info('Verifying Report Date field is defaulted to current day');
     const datePickerInput = this.page.locator('input[id*="datepicker"]').first().or(
-      this.page.locator('.e-datepicker input')
+      this.page.locator('.e-datepicker input'),
     );
     const isDatePickerVisible = await datePickerInput.first().isVisible({ timeout: 5000 }).catch(() => false);
     if (isDatePickerVisible) {
@@ -2215,18 +2237,18 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async getLiquidLevelsFirstSiteName() {
     this.logger.info('Getting first site name from Liquid Levels Site Name column');
-    
+
     const rows = this.page.locator('#liquid-levels-gird .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const siteNameHeader = this.getLiquidLevelsHeader('Site Name');
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const firstRow = rows.first();
     const siteNameCell = firstRow.locator('td').nth(siteNameColIndex);
     const siteName = (await siteNameCell.innerText()).trim();
-    
+
     this.logger.info(`First site name: ${siteName}`);
     return siteName;
   }
@@ -2239,11 +2261,11 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Verifying only filtered results are displayed');
     const rows = this.page.locator('#liquid-levels-gird .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const siteNameHeader = this.getLiquidLevelsHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -2265,11 +2287,11 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Verifying only filtered results are displayed');
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const siteNameHeader = this.getSurfaceEmissionsHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -2348,7 +2370,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getReviewEditToolbar() {
     return this.page.locator('.toolbar-item.review-edit.active').or(
-      this.page.locator('.toolbar-item.review-edit.ng-tns-c944827563-10.active')
+      this.page.locator('.toolbar-item.review-edit.ng-tns-c944827563-10.active'),
     );
   }
 
@@ -2359,7 +2381,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getReviewEditSiteNameDropdown(siteName) {
     return this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard.e-valid-input').filter({ hasText: siteName }).or(
-      this.page.locator(this.siteNameDropdownSelector).filter({ hasText: siteName })
+      this.page.locator(this.siteNameDropdownSelector).filter({ hasText: siteName }),
     );
   }
 
@@ -2370,7 +2392,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getPresetDropdown(presetName) {
     return this.page.locator(this.siteNameDropdownSelector).filter({ hasText: presetName }).or(
-      this.page.getByRole('combobox', { name: presetName })
+      this.page.getByRole('combobox', { name: presetName }),
     );
   }
 
@@ -2380,7 +2402,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getUnapprovedOnlyLabel() {
     return this.page.locator('label').filter({ hasText: /Unapproved only/i }).or(
-      this.page.locator(this.unapprovedOnlyLabelSelector)
+      this.page.locator(this.unapprovedOnlyLabelSelector),
     );
   }
 
@@ -2391,7 +2413,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getServiceCheckbox(serviceName) {
     return this.page.locator('label').filter({ hasText: new RegExp(serviceName, 'i') }).or(
-      this.page.locator(`input[type="checkbox"] + label:has-text("${serviceName}")`)
+      this.page.locator(`input[type="checkbox"] + label:has-text("${serviceName}")`),
     );
   }
 
@@ -2409,7 +2431,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getReadingGrid() {
     return this.page.locator('#readingGrid').or(
-      this.page.locator('.reading-grid, [data-testid="reading-grid"]')
+      this.page.locator('.reading-grid, [data-testid="reading-grid"]'),
     );
   }
 
@@ -2419,7 +2441,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getReadingGridContentTable() {
     return this.page.locator('#readingGrid_content_table').or(
-      this.page.locator('.e-gridcontent table')
+      this.page.locator('.e-gridcontent table'),
     );
   }
 
@@ -2502,7 +2524,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getPointsSpecificMonitoringReportTitle() {
     return this.page.locator('text=Points Specific Monitoring Report').or(
-      this.page.locator('text=Point Specific Monitoring Report')
+      this.page.locator('text=Point Specific Monitoring Report'),
     );
   }
 
@@ -2522,7 +2544,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyReportLabels(labels) {
     const { expect } = require('@playwright/test');
-    
+
     for (const label of labels) {
       const labelLocator = this.getReportLabel(label);
       await expect(labelLocator).toBeVisible();
@@ -2537,7 +2559,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async getSEMOpenExceedancesReportValue() {
     const openExceedancesInReport = await this.page.evaluate(() => {
-      // Primary: Try SEM-specific selector first  
+      // Primary: Try SEM-specific selector first
       const textBoxSEM = document.querySelector('[data-id*="txtOpenExceedances"]');
       if (textBoxSEM) {
         const valueDiv = textBoxSEM.querySelector('div');
@@ -2548,7 +2570,7 @@ class SiteStatusDashboardPage extends BasePage {
           return textBoxSEM.textContent.trim();
         }
       }
-      
+
       // Fallback: Try standard Landfill selector
       const textBox = document.querySelector('[data-id="textBox35_4"]');
       if (textBox) {
@@ -2560,7 +2582,7 @@ class SiteStatusDashboardPage extends BasePage {
           return textBox.textContent.trim();
         }
       }
-      
+
       // Fallback: Search for "Open Exceedances" text and get adjacent numeric value
       const elements = Array.from(document.querySelectorAll('*'));
       for (let i = 0; i < elements.length; i++) {
@@ -2584,10 +2606,10 @@ class SiteStatusDashboardPage extends BasePage {
           }
         }
       }
-      
+
       return null;
     });
-    
+
     this.logger.info(`Open Exceedances in SEM Report: ${openExceedancesInReport}`);
     return openExceedancesInReport;
   }
@@ -2606,7 +2628,7 @@ class SiteStatusDashboardPage extends BasePage {
           return textBox.textContent.trim();
         }
       }
-      
+
       // Fallback: Search for "Open Exceedances" text and get adjacent numeric value
       const elements = Array.from(document.querySelectorAll('*'));
       for (let i = 0; i < elements.length; i++) {
@@ -2631,10 +2653,10 @@ class SiteStatusDashboardPage extends BasePage {
           }
         }
       }
-      
+
       return null;
     });
-    
+
     this.logger.info(`Open Exceedances in Landfill Report: ${openExceedancesInReport}`);
     return openExceedancesInReport;
   }
@@ -2649,16 +2671,16 @@ class SiteStatusDashboardPage extends BasePage {
     for (let i = 0; i < maxAttempts; i++) {
       await this.page.evaluate(() => {
         window.scrollBy(0, 300);
-        
+
         const containers = document.querySelectorAll('[class*="report"], [class*="page"], form, [role="group"]');
-        containers.forEach(container => {
+        containers.forEach((container) => {
           if (container.scrollHeight > container.clientHeight) {
             container.scrollTop += 300;
           }
         });
-        
+
         const iframes = document.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
+        iframes.forEach((iframe) => {
           try {
             if (iframe.contentDocument) {
               iframe.contentDocument.documentElement.scrollTop += 300;
@@ -2679,7 +2701,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getOperationsToolbar() {
     return this.page.locator('.toolbar-item.operation-reports.active').or(
-      this.page.locator(this.operationsToolbar)
+      this.page.locator(this.operationsToolbar),
     );
   }
 
@@ -2691,7 +2713,7 @@ class SiteStatusDashboardPage extends BasePage {
   getDatePickerInput(id = null) {
     if (id) {
       return this.page.locator(`#${id}`).or(
-        this.page.locator('input[type="text"]').filter({ has: this.page.locator('[class*="date"]') })
+        this.page.locator('input[type="text"]').filter({ has: this.page.locator('[class*="date"]') }),
       );
     }
     return this.page.locator('input[type="text"]').filter({ has: this.page.locator('[class*="date"]') });
@@ -2763,46 +2785,46 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyOpenExceedancesYellowBars(columnName = 'Open Exceedances', gridType = 'landfill') {
     const { expect } = require('@playwright/test');
-    
+
     this.logger.info(`Verifying yellow status bars in ${columnName} column`);
-    
+
     // Get column header and index using appropriate method for grid type
-    const header = gridType === 'surfaceEmissions' 
+    const header = gridType === 'surfaceEmissions'
       ? this.getSurfaceEmissionsHeader(columnName)
       : this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
     expect(colIndex).toBeGreaterThanOrEqual(0);
     this.logger.info(`✓ ${columnName} column found at index ${colIndex}`);
-    
+
     // Wait for grid rows to be visible - use appropriate selector for grid type
-    const rowsSelector = gridType === 'surfaceEmissions' 
-      ? '#surface-emissions-grid .e-row' 
+    const rowsSelector = gridType === 'surfaceEmissions'
+      ? '#surface-emissions-grid .e-row'
       : 'tr.e-row';
     const rows = this.page.locator(rowsSelector);
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
     this.logger.info(`Total rows to check: ${rowCount}`);
-    
+
     let yellowBarsFound = 0;
     let rowsWithoutYellowBars = 0;
     const expectedClasses = ['statusColor', 'e-yellow', 'ng-star-inserted'];
     const expectedBackgroundColor = 'rgb(255, 231, 19)'; // #ffe713 in RGB
     const expectedBorderRadius = '6px';
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const cell = row.locator('td').nth(colIndex);
-        
+
         // Check if cell contains a yellow status bar
         const yellowBar = cell.locator('.statusColor.e-yellow');
         const yellowBarCount = await yellowBar.count();
-        
+
         if (yellowBarCount > 0) {
           yellowBarsFound++;
           const barElement = yellowBar.first();
-          
+
           // Verify CSS classes
           this.logger.info(`Verifying yellow bar in row ${i + 1} has correct CSS classes`);
           for (const expectedClass of expectedClasses) {
@@ -2810,7 +2832,7 @@ class SiteStatusDashboardPage extends BasePage {
             expect(hasClass).toBe(true);
             this.logger.info(`✓ Row ${i + 1}: Yellow bar has class '${expectedClass}'`);
           }
-          
+
           // Verify computed styles
           this.logger.info(`Verifying yellow bar in row ${i + 1} has correct styling`);
           const computedStyles = await barElement.evaluate((el) => {
@@ -2818,20 +2840,20 @@ class SiteStatusDashboardPage extends BasePage {
             return {
               backgroundColor: styles.backgroundColor,
               backgroundImage: styles.backgroundImage,
-              borderRadius: styles.borderRadius
+              borderRadius: styles.borderRadius,
             };
           });
-          
+
           // Verify background color
           expect(computedStyles.backgroundColor).toBe(expectedBackgroundColor);
           this.logger.info(`✓ Row ${i + 1}: Background color is ${expectedBackgroundColor}`);
-          
+
           // Verify background image contains gradient
-          const hasGradient = computedStyles.backgroundImage.includes('linear-gradient') || 
-                             computedStyles.backgroundImage.includes('gradient');
+          const hasGradient = computedStyles.backgroundImage.includes('linear-gradient')
+                             || computedStyles.backgroundImage.includes('gradient');
           expect(hasGradient).toBe(true);
           this.logger.info(`✓ Row ${i + 1}: Background image contains gradient`);
-          
+
           // Verify border radius
           expect(computedStyles.borderRadius).toBe(expectedBorderRadius);
           this.logger.info(`✓ Row ${i + 1}: Border radius is ${expectedBorderRadius}`);
@@ -2842,18 +2864,18 @@ class SiteStatusDashboardPage extends BasePage {
         }
       }
     }
-    
+
     // Verify at least one yellow bar was found
     expect(yellowBarsFound).toBeGreaterThan(0);
     this.logger.info(`✓ Total yellow status bars found: ${yellowBarsFound}`);
     this.logger.info(`✓ Total rows without yellow bars: ${rowsWithoutYellowBars}`);
     this.logger.info('✓ All yellow status bars have correct CSS classes and styling');
     this.logger.info('✓ Yellow bars appear only in rows with Open Exceedances');
-    
+
     return {
       yellowBarsFound,
       rowsWithoutYellowBars,
-      totalRows: rowCount
+      totalRows: rowCount,
     };
   }
 
@@ -2864,20 +2886,20 @@ class SiteStatusDashboardPage extends BasePage {
   async captureFirstSurfaceEmissionsOpenExceedanceWithYellowBar() {
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     const openExceedencesHeader = this.getSurfaceEmissionsHeader('Open Exceedences');
     await openExceedencesHeader.waitFor({ state: 'visible', timeout: 10000 });
     const openExceedencesColIndex = await this.getColumnIndex(openExceedencesHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const exceedanceCell = row.locator('td').nth(openExceedencesColIndex);
         const yellowBar = exceedanceCell.locator(this.yellowStatusBar);
         const yellowBarCount = await yellowBar.count();
-        
+
         if (yellowBarCount > 0) {
           this.logger.info(`✓ Found first Open Exceedance in row ${i + 1}`);
           return { cell: exceedanceCell };
@@ -2894,24 +2916,24 @@ class SiteStatusDashboardPage extends BasePage {
   async captureFirstSurfaceEmissionsOpenExceedanceWithYellowBarAndValue() {
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     const openExceedencesHeader = this.getSurfaceEmissionsHeader('Open Exceedences');
     await openExceedencesHeader.waitFor({ state: 'visible', timeout: 10000 });
     const openExceedencesColIndex = await this.getColumnIndex(openExceedencesHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const exceedanceCell = row.locator('td').nth(openExceedencesColIndex);
         const yellowBar = exceedanceCell.locator(this.yellowStatusBar);
         const yellowBarCount = await yellowBar.count();
-        
+
         if (yellowBarCount > 0) {
           const statusTextElement = exceedanceCell.locator(this.statusTextColor);
           const statusTextCount = await statusTextElement.count();
-          
+
           if (statusTextCount > 0) {
             const value = (await statusTextElement.first().innerText()).trim();
             this.logger.info(`✓ Found first Open Exceedance in row ${i + 1} with value: ${value}`);
@@ -2941,26 +2963,26 @@ class SiteStatusDashboardPage extends BasePage {
 
     const rowCount = await rows.count();
     this.logger.info(`Total rows to check: ${rowCount}`);
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const readingApprovalCell = row.locator('td').nth(readingApprovalColIndex);
         const ngStarInserted = readingApprovalCell.locator('.ng-star-inserted');
         const ngStarCount = await ngStarInserted.count();
-        
+
         if (ngStarCount > 0) {
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
-          
+
           this.logger.info(`✓ Found ng-star-inserted in row ${i + 1}`);
           this.logger.info(`✓ Captured Site Name: ${siteName}`);
-          
+
           return { siteName, cell: readingApprovalCell };
         }
       }
     }
-    
+
     return { siteName: '', cell: null };
   }
 
@@ -2982,31 +3004,31 @@ class SiteStatusDashboardPage extends BasePage {
 
     const rowCount = await rows.count();
     this.logger.info(`Total rows to check: ${rowCount}`);
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const readingApprovalCell = row.locator('td').nth(readingApprovalColIndex);
         const ngStarInserted = readingApprovalCell.locator('.ng-star-inserted');
         const ngStarCount = await ngStarInserted.count();
-        
+
         if (ngStarCount > 0) {
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
-          
+
           // Get the count from the span inside the cell
           const countSpan = readingApprovalCell.locator('span');
           const count = (await countSpan.first().innerText()).trim();
-          
+
           this.logger.info(`✓ Found Reading Approval Required in row ${i + 1}`);
           this.logger.info(`✓ Captured Site Name: ${siteName}`);
           this.logger.info(`✓ Captured Reading Approval Required count: ${count}`);
-          
+
           return { siteName, count, cell: readingApprovalCell };
         }
       }
     }
-    
+
     return { siteName: '', count: '', cell: null };
   }
 
@@ -3018,17 +3040,17 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Locating Grids:Instant Not Monitored column and capturing value from span');
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const gridsInstantHeader = this.getSurfaceEmissionsHeader('Grids:Instant Not Monitored');
     await gridsInstantHeader.waitFor({ state: 'visible', timeout: 10000 });
     const gridsInstantColIndex = await this.getColumnIndex(gridsInstantHeader);
-    
+
     const siteNameHeader = this.getSurfaceEmissionsHeader('Site Name');
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -3055,17 +3077,17 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Locating Grids:Integ Not Monitored column and capturing value from span');
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const gridsIntegHeader = this.getSurfaceEmissionsHeader('Grids:Integ Not Monitored');
     await gridsIntegHeader.waitFor({ state: 'visible', timeout: 10000 });
     const gridsIntegColIndex = await this.getColumnIndex(gridsIntegHeader);
-    
+
     const siteNameHeader = this.getSurfaceEmissionsHeader('Site Name');
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -3092,17 +3114,17 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Locating Pos.Press. Pts Not Monitored column and capturing value from span');
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const posPresseHeader = this.getSurfaceEmissionsHeader('Pos.Press. Pts Not Monitored');
     await posPresseHeader.waitFor({ state: 'visible', timeout: 10000 });
     const posPressColIndex = await this.getColumnIndex(posPresseHeader);
-    
+
     const siteNameHeader = this.getSurfaceEmissionsHeader('Site Name');
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -3129,17 +3151,17 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Locating Ambient Pts Not Monitored column and capturing value from span');
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const ambientHeader = this.getSurfaceEmissionsHeader('Ambient Pts Not Monitored');
     await ambientHeader.waitFor({ state: 'visible', timeout: 10000 });
     const ambientColIndex = await this.getColumnIndex(ambientHeader);
-    
+
     const siteNameHeader = this.getSurfaceEmissionsHeader('Site Name');
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -3166,17 +3188,17 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Locating Missed Readings column and capturing value from span');
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const missedReadingsHeader = this.getSurfaceEmissionsHeader('Missed Readings');
     await missedReadingsHeader.waitFor({ state: 'visible', timeout: 10000 });
     const missedReadingsColIndex = await this.getColumnIndex(missedReadingsHeader);
-    
+
     const siteNameHeader = this.getSurfaceEmissionsHeader('Site Name');
     await siteNameHeader.waitFor({ state: 'visible', timeout: 10000 });
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -3203,20 +3225,20 @@ class SiteStatusDashboardPage extends BasePage {
     this.logger.info('Locating Open Exceedences column and capturing value with class statusTextColor');
     const rows = this.page.locator('#surface-emissions-grid .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 20000 });
-    
+
     const openExceedencesHeader = this.getSurfaceEmissionsHeader('Open Exceedences');
     await openExceedencesHeader.waitFor({ state: 'visible', timeout: 10000 });
     const openExceedencesColIndex = await this.getColumnIndex(openExceedencesHeader);
-    
+
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const exceedanceCell = row.locator('td').nth(openExceedencesColIndex);
         const statusTextElement = exceedanceCell.locator('.statusTextColor');
         const statusTextCount = await statusTextElement.count();
-        
+
         if (statusTextCount > 0) {
           const value = (await statusTextElement.first().innerText()).trim();
           this.logger.info(`✓ Captured Open Exceedances value: ${value}`);
@@ -3247,27 +3269,27 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async searchAndSelectSiteInExceedanceManager(siteName) {
     this.logger.info(`Searching for site: ${siteName}`);
-    
+
     // Find the visible site combobox in Exceedance Manager
     // Use the first visible .e-input-group.e-ddl wrapper which contains the combobox
     const siteComboboxWrapper = this.page.locator('.e-input-group.e-control-wrapper.e-ddl').first();
     await siteComboboxWrapper.waitFor({ state: 'visible', timeout: 10000 });
     await siteComboboxWrapper.click();
     await this.page.waitForLoadState('networkidle');
-    
+
     // Enter site name in the popup input
     const inputField = this.page.locator('input.e-input-filter').or(
-      this.page.locator('.e-input-filter input')
+      this.page.locator('.e-input-filter input'),
     );
     await inputField.waitFor({ state: 'visible', timeout: 5000 });
     await inputField.fill(siteName);
     await this.page.waitForLoadState('networkidle');
-    
+
     // Select the site from dropdown options
     const siteOption = this.page.getByRole('option', { name: siteName, exact: true });
     await siteOption.waitFor({ state: 'visible', timeout: 5000 });
     await siteOption.click();
-    
+
     this.logger.info(`✓ Site "${siteName}" selected in Exceedance Manager`);
   }
 
@@ -3277,35 +3299,35 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async countInstantaneousExceedances() {
     this.logger.info('Counting instantaneous exceedances');
-    
+
     // Wait for grid to load
     await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {
       this.logger.info('Network did not go idle, continuing...');
     });
     await this.page.waitForLoadState('networkidle');
-    
+
     // Ensure Compliance dropdown is selected (it should auto-select after site selection)
     const complianceDropdown = this.page.locator('[aria-labelledby*="ej2_dropdownlist"]').filter({ hasText: 'Compliance' }).first();
     if (await complianceDropdown.isVisible().catch(() => false)) {
       this.logger.info('✓ Compliance dropdown is visible and selected');
     }
-    
+
     const grid = this.page.locator('#semExceedanceListGrid');
     await grid.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Wait for grid content to load - check for grid rows
     await this.page.waitForLoadState('networkidle').catch(() => {});
-    
+
     // Wait for grid rows to appear
     await grid.locator('.e-row, tr.e-row').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {
       this.logger.info('No grid rows found, data may not be loaded');
     });
-    
+
     // Get all collapse icons - these are the main rows that need to be expanded
     const collapseIcons = grid.locator('a.e-dtdiagonalright');
     const iconCount = await collapseIcons.count();
     this.logger.info(`Found ${iconCount} rows with collapse icons to expand`);
-    
+
     if (iconCount === 0) {
       // No expandable rows - check if data is already visible
       this.logger.info('No expandable rows found - checking if data is already visible');
@@ -3318,21 +3340,21 @@ class SiteStatusDashboardPage extends BasePage {
       this.logger.info('No instantaneous exceedances found');
       return 0;
     }
-    
+
     // Expand all rows by clicking all collapse icons
     // We need to keep clicking until all are expanded since DOM changes after each click
     let expandedCount = 0;
-    let maxAttempts = iconCount * 2; // Allow extra attempts in case some fail
-    
+    const maxAttempts = iconCount * 2; // Allow extra attempts in case some fail
+
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const remainingIcons = grid.locator('a.e-dtdiagonalright');
       const remaining = await remainingIcons.count();
-      
+
       if (remaining === 0) {
         this.logger.info(`All rows expanded after ${expandedCount} clicks`);
         break;
       }
-      
+
       try {
         // Always click the first unexpanded icon
         await remainingIcons.first().click({ force: true, timeout: 3000 });
@@ -3343,22 +3365,22 @@ class SiteStatusDashboardPage extends BasePage {
         this.logger.info(`Failed to click icon on attempt ${attempt + 1}: ${error.message}`);
       }
     }
-    
+
     // Wait for all child grids to fully load after all expansions
     this.logger.info('Waiting for all expanded child grids to fully load...');
     await this.page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {
       this.logger.info('Network did not go idle after expansion, continuing...');
     });
-    
+
     // Wait for at least one "Instantaneous" cell to be visible (confirms data loaded)
     await grid.locator('text=Instantaneous').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {
       this.logger.info('No "Instantaneous" cells found, may indicate no data or loading issue');
     });
-    
+
     // Additional wait for grid to fully stabilize after expansion - critical for accurate counting
     this.logger.info('Waiting for grid to stabilize after expansion...');
     await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
-    
+
     // Wait for the grid content to be fully rendered
     await this.page.waitForFunction(() => {
       const gridElement = document.querySelector('#semExceedanceListGrid');
@@ -3368,12 +3390,12 @@ class SiteStatusDashboardPage extends BasePage {
     }, { timeout: 10000 }).catch(() => {
       this.logger.info('Grid content wait timed out, continuing with count...');
     });
-    
+
     // Now count all "Instantaneous" text in the entire grid
     const instantaneousCells = grid.locator('text=Instantaneous');
     const cellCount = await instantaneousCells.count();
     this.logger.info(`Found ${cellCount} cells containing "Instantaneous"`);
-    
+
     this.logger.info(`✓ Total instantaneous exceedances: ${cellCount}`);
     return cellCount;
   }
@@ -3385,11 +3407,11 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyGridInstantaneousChecked() {
     this.logger.info('Verifying "Instantaneous" checkbox is checked under Grid Reading Method');
     const instantaneousCheckbox = this.page.locator('[data-qa="ds-operationrpt-sempointspecificmonitoring-gridinstantaneous-chckbx"]').or(
-      this.page.locator('text=Instantaneous').locator('..').locator('input[type="checkbox"][aria-checked="true"]')
+      this.page.locator('text=Instantaneous').locator('..').locator('input[type="checkbox"][aria-checked="true"]'),
     ).or(
-      this.page.locator('text=Instantaneous').locator('..').locator('.e-check')
+      this.page.locator('text=Instantaneous').locator('..').locator('.e-check'),
     );
-    
+
     const isChecked = await instantaneousCheckbox.first().isVisible({ timeout: 5000 }).catch(() => false);
     if (isChecked) {
       this.logger.info('✓ "Instantaneous" checkbox is checked under Grid Reading Method');
@@ -3405,11 +3427,11 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyGridIntegratedChecked() {
     this.logger.info('Verifying "Integrated" checkbox is checked under Grid Reading Method');
     const integratedCheckbox = this.page.locator('[data-qa="ds-operationrpt-sempointspecificmonitoring-gridintegrated-chckbx"]').or(
-      this.page.locator('text=Integrated').locator('..').locator('input[type="checkbox"][aria-checked="true"]')
+      this.page.locator('text=Integrated').locator('..').locator('input[type="checkbox"][aria-checked="true"]'),
     ).or(
-      this.page.locator('text=Integrated').locator('..').locator('.e-check')
+      this.page.locator('text=Integrated').locator('..').locator('.e-check'),
     );
-    
+
     const isChecked = await integratedCheckbox.first().isVisible({ timeout: 5000 }).catch(() => false);
     if (isChecked) {
       this.logger.info('✓ "Integrated" checkbox is checked under Grid Reading Method');
@@ -3424,24 +3446,24 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyGridReadingMethodNotSelected() {
     this.logger.info('Verifying Grid Reading Method checkboxes are NOT selected by default');
-    
+
     // Check if Instantaneous is NOT checked
     const instantaneousChecked = this.page.locator('[data-qa="ds-operationrpt-sempointspecificmonitoring-gridinstantaneous-chckbx"]').or(
-      this.page.locator('text=Instantaneous').locator('..').locator('input[type="checkbox"][aria-checked="true"]')
+      this.page.locator('text=Instantaneous').locator('..').locator('input[type="checkbox"][aria-checked="true"]'),
     ).or(
-      this.page.locator('text=Instantaneous').locator('..').locator('.e-check')
+      this.page.locator('text=Instantaneous').locator('..').locator('.e-check'),
     );
-    
+
     // Check if Integrated is NOT checked
     const integratedChecked = this.page.locator('[data-qa="ds-operationrpt-sempointspecificmonitoring-gridintegrated-chckbx"]').or(
-      this.page.locator('text=Integrated').locator('..').locator('input[type="checkbox"][aria-checked="true"]')
+      this.page.locator('text=Integrated').locator('..').locator('input[type="checkbox"][aria-checked="true"]'),
     ).or(
-      this.page.locator('text=Integrated').locator('..').locator('.e-check')
+      this.page.locator('text=Integrated').locator('..').locator('.e-check'),
     );
-    
+
     const instantaneousIsChecked = await instantaneousChecked.first().isVisible({ timeout: 5000 }).catch(() => false);
     const integratedIsChecked = await integratedChecked.first().isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     if (!instantaneousIsChecked && !integratedIsChecked) {
       this.logger.info('✓ Neither "Instantaneous" nor "Integrated" checkboxes are selected by default');
     } else {
@@ -3462,17 +3484,17 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyDataServicesCheckboxes(services) {
     for (const service of services) {
       const serviceCheckbox = this.page.locator('label').filter({ hasText: new RegExp(service, 'i') }).or(
-        this.page.getByText(service, { exact: false })
+        this.page.getByText(service, { exact: false }),
       );
-      
+
       const isVisible = await serviceCheckbox.first().isVisible({ timeout: 5000 }).catch(() => false);
       if (isVisible) {
         const isChecked = await this.page.evaluate((serviceName) => {
           const labels = document.querySelectorAll('label');
           for (const label of labels) {
             if (label.textContent.toLowerCase().includes(serviceName.toLowerCase())) {
-              const checkbox = label.querySelector('input[type="checkbox"]') ||
-                              label.previousElementSibling?.querySelector('input[type="checkbox"]');
+              const checkbox = label.querySelector('input[type="checkbox"]')
+                              || label.previousElementSibling?.querySelector('input[type="checkbox"]');
               if (checkbox) return checkbox.checked;
               const checkmark = label.querySelector('.checkmark.checkmark');
               if (checkmark) return true;
@@ -3482,7 +3504,7 @@ class SiteStatusDashboardPage extends BasePage {
           }
           return null;
         }, service);
-        
+
         if (isChecked !== null) {
           if (!isChecked) {
             throw new Error(`"${service}" checkbox is not selected`);
@@ -3511,9 +3533,9 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getReviewEditToolbar() {
     return this.page.locator('.toolbar-item.review-edit.active').or(
-      this.page.locator('.toolbar-item.review-edit').filter({ has: this.page.locator('.active') })
+      this.page.locator('.toolbar-item.review-edit').filter({ has: this.page.locator('.active') }),
     ).or(
-      this.page.locator('.toolbar-item.review-edit')
+      this.page.locator('.toolbar-item.review-edit'),
     );
   }
 
@@ -3524,7 +3546,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getSiteNameDropdownByName(siteName) {
     return this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard.e-valid-input').filter({ hasText: siteName }).or(
-      this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard').filter({ hasText: siteName })
+      this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard').filter({ hasText: siteName }),
     );
   }
 
@@ -3543,7 +3565,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getPresetDropdownByName(presetName) {
     return this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard').filter({ hasText: presetName }).or(
-      this.page.getByRole('combobox', { name: presetName })
+      this.page.getByRole('combobox', { name: presetName }),
     );
   }
 
@@ -3553,7 +3575,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getUnapprovedOnlyLabel() {
     return this.page.locator('label').filter({ hasText: /Unapproved only/i }).or(
-      this.page.getByText('Unapproved only', { exact: false })
+      this.page.getByText('Unapproved only', { exact: false }),
     );
   }
 
@@ -3571,9 +3593,9 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getReadingGrid() {
     return this.page.locator('#readingGrid').or(
-      this.page.locator('[id*="readingGrid"]')
+      this.page.locator('[id*="readingGrid"]'),
     ).or(
-      this.page.locator('.e-grid').filter({ has: this.page.locator('text=READINGS') })
+      this.page.locator('.e-grid').filter({ has: this.page.locator('text=READINGS') }),
     );
   }
 
@@ -3583,11 +3605,11 @@ class SiteStatusDashboardPage extends BasePage {
    */
   getReadingGridContentTable() {
     return this.page.locator('#readingGrid_content_table').or(
-      this.page.locator('[id*="readingGrid_content_table"]')
+      this.page.locator('[id*="readingGrid_content_table"]'),
     ).or(
-      this.page.locator('#readingGrid .e-content table')
+      this.page.locator('#readingGrid .e-content table'),
     ).or(
-      this.page.locator('.e-grid .e-content table')
+      this.page.locator('.e-grid .e-content table'),
     );
   }
 
@@ -3649,7 +3671,7 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyContactsPopupVisible() {
     // Wait a moment for dialog to appear
     await this.page.waitForTimeout(500);
-    
+
     // Filter for the visible dialog header containing "Site Contacts"
     const dialogHeader = this.page.locator('.e-dlg-header-content').filter({ hasText: 'Site Contacts' });
     await dialogHeader.waitFor({ state: 'visible', timeout: 15000 });
@@ -3686,23 +3708,23 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async filterByColumn(columnName, filterValue) {
     this.logger.info(`Filtering column "${columnName}" by "${filterValue}"`);
-    
+
     // Click filter icon for the column
     await this.clickSurfaceEmissionsFilterIcon(columnName);
     await this.page.waitForLoadState('networkidle');
-    
+
     // Fill filter search input
     const filterSearchInput = this.getFilterMenuSearchInput();
     await filterSearchInput.waitFor({ state: 'visible', timeout: 10000 });
     await filterSearchInput.fill(filterValue);
     await this.page.waitForLoadState('networkidle');
-    
+
     // Click OK button
     const okButton = this.getOkButton();
     await okButton.waitFor({ state: 'visible', timeout: 10000 });
     await okButton.click();
     await this.page.waitForLoadState('networkidle');
-    
+
     this.logger.info(`✓ Filter applied: ${columnName} = ${filterValue}`);
   }
 
@@ -3726,13 +3748,13 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async validateColumnValuesMatch(columnName, expectedValue) {
     const values = await this.getSurfaceEmissionsColumnValuesByName(columnName);
-    
+
     for (const value of values) {
       if (value !== expectedValue) {
         throw new Error(`Column "${columnName}" has value "${value}" but expected "${expectedValue}"`);
       }
     }
-    
+
     this.logger.info(`✓ All ${values.length} rows have ${columnName} = ${expectedValue}`);
     return values.length;
   }
@@ -3744,20 +3766,20 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async validateColumnSorting(columnName) {
     this.logger.info(`Validating sorting for column: ${columnName}`);
-    
+
     const header = this.getSurfaceEmissionsHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Click to set ascending
     await header.click();
     await this.ensureSortState(header, 'ascending');
-    
+
     const colIndex = await this.getColumnIndex(header);
-    
+
     // Validate ascending
     const uiAsc = await this.getSurfaceEmissionsColumnValues(colIndex);
     const uiAscNorm = this.normalizeValues(uiAsc);
-    
+
     const sortAsc = (a, b) => {
       if (a === '' && b === '') return 0;
       if (a === '') return 1;
@@ -3765,19 +3787,19 @@ class SiteStatusDashboardPage extends BasePage {
       return a.localeCompare(b);
     };
     const expectedAscNorm = [...uiAscNorm].sort(sortAsc);
-    
+
     if (JSON.stringify(uiAscNorm) !== JSON.stringify(expectedAscNorm)) {
       throw new Error(`Column "${columnName}" is not sorted ascending correctly`);
     }
     this.logger.info(`✓ ${columnName} sorted ascending correctly`);
-    
+
     // Click to set descending
     await header.click();
     await this.ensureSortState(header, 'descending');
-    
+
     const uiDesc = await this.getSurfaceEmissionsColumnValues(colIndex);
     const uiDescNorm = this.normalizeValues(uiDesc);
-    
+
     const sortDesc = (a, b) => {
       if (a === '' && b === '') return 0;
       if (a === '') return -1;
@@ -3785,7 +3807,7 @@ class SiteStatusDashboardPage extends BasePage {
       return b.localeCompare(a);
     };
     const expectedDescNorm = [...uiDescNorm].sort(sortDesc);
-    
+
     if (JSON.stringify(uiDescNorm) !== JSON.stringify(expectedDescNorm)) {
       throw new Error(`Column "${columnName}" is not sorted descending correctly`);
     }
@@ -3811,30 +3833,30 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifySurfaceEmissionsGridSorting(columnNames) {
     this.logger.info(`Validating Surface Emissions grid sorting for ${columnNames.length} columns`);
-    
+
     // Wait for grid to be fully loaded
     await this.page.waitForSelector('.e-gridcontent', { state: 'visible', timeout: 10000 });
     await this.page.waitForLoadState('networkidle');
     this.logger.info('✓ Grid loaded successfully');
-    
+
     for (const columnName of columnNames) {
       this.logger.info(`Validating sorting for column: ${columnName}`);
-      
+
       const header = this.getSurfaceEmissionsHeader(columnName);
       await header.waitFor({ state: 'visible', timeout: 10000 });
-      
+
       // Click to set ascending
       await header.click();
       await this.ensureSortState(header, 'ascending');
-      
+
       const colIndex = await this.getColumnIndex(header);
       const { expect } = require('@playwright/test');
       expect(colIndex).toBeGreaterThanOrEqual(0);
-      
+
       // Validate ascending
       const uiAsc = await this.getSurfaceEmissionsColumnValues(colIndex);
       const uiAscNorm = this.normalizeValues(uiAsc);
-      
+
       const sortAsc = (a, b) => {
         if (a === '' && b === '') return 0;
         if (a === '') return 1;
@@ -3844,14 +3866,14 @@ class SiteStatusDashboardPage extends BasePage {
       const expectedAscNorm = [...uiAscNorm].sort(sortAsc);
       expect(uiAscNorm).toEqual(expectedAscNorm);
       this.logger.info(`✓ ${columnName} sorted ascending correctly`);
-      
+
       // Click to set descending
       await header.click();
       await this.ensureSortState(header, 'descending');
-      
+
       const uiDesc = await this.getSurfaceEmissionsColumnValues(colIndex);
       const uiDescNorm = this.normalizeValues(uiDesc);
-      
+
       const sortDesc = (a, b) => {
         if (a === '' && b === '') return 0;
         if (a === '') return -1;
@@ -3862,7 +3884,7 @@ class SiteStatusDashboardPage extends BasePage {
       expect(uiDescNorm).toEqual(expectedDescNorm);
       this.logger.info(`✓ ${columnName} sorted descending correctly`);
     }
-    
+
     this.logger.info(`✓ Successfully validated sorting for all ${columnNames.length} columns`);
   }
 
@@ -3874,17 +3896,17 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async scrollToElement(text, maxAttempts = 50) {
     const locator = this.page.locator(`text=${text}`);
-    
+
     for (let i = 0; i < maxAttempts; i++) {
       if (await locator.isVisible().catch(() => false)) {
         this.logger.info(`✓ Found element with text: ${text}`);
         return;
       }
-      
+
       await this.page.evaluate(() => {
         window.scrollBy(0, 300);
         const containers = document.querySelectorAll('[class*="report"], [class*="page"], form, [role="group"]');
-        containers.forEach(container => {
+        containers.forEach((container) => {
           if (container.scrollHeight > container.clientHeight) {
             container.scrollTop += 300;
           }
@@ -3892,7 +3914,7 @@ class SiteStatusDashboardPage extends BasePage {
       });
       await this.page.waitForLoadState('networkidle');
     }
-    
+
     await locator.first().waitFor({ state: 'visible', timeout: 15000 });
   }
 
@@ -3959,13 +3981,13 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyAllRowsHaveValue(columnName, expectedValue) {
     const values = await this.getColumnValuesByName(columnName);
     this.logger.info(`Verifying all ${values.length} rows have ${columnName} = ${expectedValue}`);
-    
+
     for (const value of values) {
       if (value !== expectedValue) {
         throw new Error(`Expected ${columnName} = ${expectedValue}, but found ${value}`);
       }
     }
-    
+
     this.logger.info(`✓ All ${values.length} rows have ${columnName} = ${expectedValue}`);
   }
 
@@ -3989,7 +4011,7 @@ class SiteStatusDashboardPage extends BasePage {
     await this.page.evaluate((px) => {
       window.scrollBy(0, px);
       const containers = document.querySelectorAll('[class*="report"], [class*="page"], form, [role="group"]');
-      containers.forEach(container => {
+      containers.forEach((container) => {
         if (container.scrollHeight > container.clientHeight) {
           container.scrollTop += px;
         }
@@ -4007,7 +4029,7 @@ class SiteStatusDashboardPage extends BasePage {
     await this.page.evaluate((px) => {
       window.scrollBy(0, -px);
       const containers = document.querySelectorAll('[class*="report"], [class*="page"], form, [role="group"]');
-      containers.forEach(container => {
+      containers.forEach((container) => {
         if (container.scrollTop > 0) {
           container.scrollTop -= px;
         }
@@ -4023,13 +4045,13 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async clickOpenExceedancesCell(siteName) {
     this.logger.step(`Click Open Exceedances cell for ${siteName}`);
-    
+
     // Find the row with the site name
     const row = this.page.locator('.e-row').filter({ hasText: siteName });
-    
+
     // Find the Open Exceedances column cell in that row
     const cell = row.locator('td').filter({ has: this.page.locator('.e-unboundcell') }).first();
-    
+
     await cell.click();
     this.logger.info(`✓ Clicked Open Exceedances cell for ${siteName}`);
   }
@@ -4042,29 +4064,29 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async applyFilterExact(columnName, value) {
     this.logger.step(`Apply filter: ${columnName} = ${value}`);
-    
+
     await this.clickFilterIcon(columnName);
     await this.waitForGridLoad(1500);
-    
+
     // Type value in search box
     const searchInput = this.page.getByRole('textbox', { name: 'Search' });
     await searchInput.fill(value);
     await this.waitForGridLoad(500);
-    
+
     // Get all available filter text options for debugging
     const excelFilter = this.page.getByLabel('Excel filter');
     const filterTextElements = excelFilter.locator('.e-checkboxfiltertext');
     const allOptions = await filterTextElements.allInnerTexts();
     this.logger.info(`Available filter options: ${JSON.stringify(allOptions)}`);
-    
+
     // Click Select All to deselect all
     await excelFilter.getByText('Select All', { exact: true }).click();
     await this.waitForGridLoad(300);
-    
+
     // Find the exact match by iterating through all options
     const optionCount = await filterTextElements.count();
     let foundExactMatch = false;
-    
+
     for (let i = 0; i < optionCount; i++) {
       const optionText = await filterTextElements.nth(i).innerText();
       if (optionText.trim() === value) {
@@ -4081,7 +4103,7 @@ class SiteStatusDashboardPage extends BasePage {
         break;
       }
     }
-    
+
     if (!foundExactMatch) {
       this.logger.warn(`No exact match found for "${value}", using fallback`);
       // Fallback to the regex approach
@@ -4093,13 +4115,13 @@ class SiteStatusDashboardPage extends BasePage {
         await excelFilter.getByText(value, { exact: true }).click();
       }
     }
-    
+
     await this.waitForGridLoad(300);
-    
+
     // Click OK to apply
     await this.page.getByRole('button', { name: 'OK' }).click();
     await this.waitForGridLoad(2000);
-    
+
     this.logger.info(`✓ Filter applied: ${columnName} = ${value}`);
   }
 
@@ -4171,7 +4193,7 @@ class SiteStatusDashboardPage extends BasePage {
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
-    
+
     if (colIndex < 0) {
       throw new Error(`${columnName} column not found`);
     }
@@ -4213,7 +4235,7 @@ class SiteStatusDashboardPage extends BasePage {
             return {
               backgroundColor: styles.backgroundColor,
               backgroundImage: styles.backgroundImage,
-              borderRadius: styles.borderRadius
+              borderRadius: styles.borderRadius,
             };
           });
 
@@ -4221,8 +4243,8 @@ class SiteStatusDashboardPage extends BasePage {
             throw new Error(`Row ${i + 1}: Expected background color ${expectedBackgroundColor}, got ${computedStyles.backgroundColor}`);
           }
 
-          const hasGradient = computedStyles.backgroundImage.includes('linear-gradient') || 
-                             computedStyles.backgroundImage.includes('gradient');
+          const hasGradient = computedStyles.backgroundImage.includes('linear-gradient')
+                             || computedStyles.backgroundImage.includes('gradient');
           if (!hasGradient) {
             throw new Error(`Row ${i + 1}: Background image does not contain gradient`);
           }
@@ -4242,11 +4264,11 @@ class SiteStatusDashboardPage extends BasePage {
 
   /**
    * Find first row with open exceedance and get site name
-   * @returns {Promise<{siteName: string, cell: any}>} Site name and exceedance cell
+   * @returns {Promise<{siteName: string, cell: import('@playwright/test').Locator}>} Site name and exceedance cell locator
    */
   async findFirstOpenExceedanceWithSiteName() {
     this.logger.step('Locate first Open Exceedance and capture Site Name');
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
 
@@ -4309,7 +4331,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async findSiteNameWithCountInColumn(columnName, minCount = 0) {
     this.logger.step(`Find first row with ${columnName} > ${minCount}`);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
@@ -4353,7 +4375,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async findRowWithCountInColumn(columnName, minCount = 0) {
     this.logger.step(`Find first row with ${columnName} > ${minCount}`);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
@@ -4383,11 +4405,13 @@ class SiteStatusDashboardPage extends BasePage {
           if (count > minCount) {
             const siteNameCell = row.locator('td').nth(siteNameColIndex);
             const siteName = (await siteNameCell.innerText()).trim();
-            
+
             this.logger.info(`✓ Found ${columnName} count: ${count} in row ${i + 1}`);
             this.logger.info(`✓ Captured Site Name: ${siteName}`);
-            
-            return { count, siteName, row, colIndex };
+
+            return {
+              count, siteName, row, colIndex,
+            };
           }
         }
       }
@@ -4404,7 +4428,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async findRowWithSiteNameAndColumn(targetSiteName, columnName) {
     this.logger.step(`Find row with Site Name="${targetSiteName}" and get ${columnName} value`);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
@@ -4426,9 +4450,9 @@ class SiteStatusDashboardPage extends BasePage {
         const siteNameCell = row.locator('td').nth(siteNameColIndex);
         const siteName = (await siteNameCell.innerText()).trim();
         foundSites.push(siteName);
-        
+
         this.logger.info(`Row ${i + 1} - Site Name: "${siteName}"`);
-        
+
         // Check if this row matches the target site name exactly
         if (siteName === targetSiteName) {
           const cell = row.locator('td').nth(colIndex);
@@ -4439,11 +4463,13 @@ class SiteStatusDashboardPage extends BasePage {
             const firstSpan = spans.first();
             const cellText = await firstSpan.innerText().catch(() => '');
             const count = parseInt(cellText.trim(), 10) || 0;
-            
+
             this.logger.info(`✓ Found row with Site Name: "${siteName}"`);
             this.logger.info(`✓ ${columnName} count: ${count}`);
-            
-            return { count, siteName, row, colIndex };
+
+            return {
+              count, siteName, row, colIndex,
+            };
           }
         }
       }
@@ -4464,7 +4490,7 @@ class SiteStatusDashboardPage extends BasePage {
     const locators = [
       this.page.locator(`text=${text}`),
       this.page.locator(`//*[contains(text(), '${text}')]`),
-      this.page.getByText(text, { exact: false })
+      this.page.getByText(text, { exact: false }),
     ];
 
     // First wait for page to fully load
@@ -4484,14 +4510,14 @@ class SiteStatusDashboardPage extends BasePage {
       await this.page.evaluate(() => {
         window.scrollBy(0, 300);
         const containers = document.querySelectorAll('[class*="report"], [class*="page"], form, [role="group"], [role="main"]');
-        containers.forEach(container => {
+        containers.forEach((container) => {
           if (container.scrollHeight > container.clientHeight) {
             container.scrollTop += 300;
           }
         });
 
         const iframes = document.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
+        iframes.forEach((iframe) => {
           try {
             if (iframe.contentDocument) {
               iframe.contentDocument.body.scrollTop += 300;
@@ -4518,7 +4544,7 @@ class SiteStatusDashboardPage extends BasePage {
         // Try next locator
       }
     }
-    
+
     throw new Error(`Element with text "${text}" not found after ${maxAttempts} scroll attempts and final wait`);
   }
 
@@ -4529,7 +4555,7 @@ class SiteStatusDashboardPage extends BasePage {
   async getReadingsCountFromPage() {
     const openExceedancesInReport = await this.page.evaluate(() => {
       const elements = Array.from(document.querySelectorAll('*'));
-      
+
       for (const el of elements) {
         const text = el.textContent || '';
         if (text.includes('Open Exceedances') || text.includes('open exceedances')) {
@@ -4553,13 +4579,13 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyAllRowsHaveSiteName(siteName) {
     this.logger.step(`Verify grid displays only filtered site records: ${siteName}`);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -4581,22 +4607,22 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async getFirstValueWithClassInColumn(columnName, className) {
     this.logger.step(`Capture first value with class ${className} in ${columnName}`);
-    
+
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const cell = row.locator('td').nth(colIndex);
         const element = cell.locator(`.${className}`);
         const count = await element.count();
-        
+
         if (count > 0) {
           const value = (await element.first().innerText()).trim();
           this.logger.info(`✓ Captured ${columnName} value: ${value}`);
@@ -4604,7 +4630,7 @@ class SiteStatusDashboardPage extends BasePage {
         }
       }
     }
-    
+
     throw new Error(`No value found with class ${className} in ${columnName}`);
   }
 
@@ -4616,37 +4642,37 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async findFirstCellWithClass(columnName, className) {
     this.logger.step(`Finding first cell with class ${className} in ${columnName}`);
-    
+
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const cell = row.locator('td').nth(colIndex);
         const element = cell.locator(`.${className}`);
         const count = await element.count();
-        
+
         if (count > 0) {
           const value = (await element.first().innerText()).trim();
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
-          
+
           this.logger.info(`✓ Captured ${columnName} value: ${value}`);
           this.logger.info(`✓ Captured Site Name: ${siteName}`);
           return { value, siteName, cell };
         }
       }
     }
-    
+
     throw new Error(`No cell found with class ${className} in ${columnName}`);
   }
 
@@ -4657,38 +4683,38 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async findFirstNonZeroNgStarCell(columnName) {
     this.logger.step(`Finding first non-zero ng-star cell in ${columnName}`);
-    
+
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const cell = row.locator('td').nth(colIndex);
         const ngStarSpan = cell.locator('span[ng-reflect-ng-class]');
         const ngStarCount = await ngStarSpan.count();
-        
+
         if (ngStarCount > 0) {
           const spanText = (await ngStarSpan.first().innerText()).trim();
           if (spanText && /^\d+$/.test(spanText) && parseInt(spanText, 10) > 0) {
             const siteNameCell = row.locator('td').nth(siteNameColIndex);
             const siteName = (await siteNameCell.innerText()).trim();
-            
+
             this.logger.info(`✓ Found ${columnName} value: ${spanText} for site: ${siteName}`);
             return { value: spanText, siteName, cell };
           }
         }
       }
     }
-    
+
     throw new Error(`No non-zero ng-star cell found in ${columnName}`);
   }
 
@@ -4698,20 +4724,20 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyAndGetDatePickerValue() {
     const isDatePickerVisible = await this.page.locator('.e-datepicker').isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     if (isDatePickerVisible) {
       this.logger.info('✓ Date Picker is visible');
-      
+
       const datePicker = this.page.locator('.e-datepicker input, input[aria-label*="Choose"]').first();
       await datePicker.waitFor({ state: 'visible', timeout: 5000 });
       const dateValue = await datePicker.inputValue();
-      
+
       if (dateValue) {
         this.logger.info(`✓ Date Picker has value: ${dateValue}`);
         return dateValue;
       }
     }
-    
+
     throw new Error('Date picker not visible or has no value');
   }
 
@@ -4723,35 +4749,35 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyPointTypeChecked(itemKeywords) {
     const itemName = itemKeywords.join(' or ');
     this.logger.step(`Verifying ${itemName} is checked in point types`);
-    
+
     const isChecked = await this.page.evaluate((keywords) => {
       const listContainer = document.querySelector('.e-list-parent.e-ul');
       if (!listContainer) return false;
-      
+
       const checkedItems = listContainer.querySelectorAll('.e-list-item.e-active');
-      
+
       for (const item of checkedItems) {
         const text = item.textContent.toLowerCase();
-        if (keywords.some(keyword => text.includes(keyword.toLowerCase()))) {
+        if (keywords.some((keyword) => text.includes(keyword.toLowerCase()))) {
           return true;
         }
       }
-      
+
       // Alternative: check for checkbox in specific list item
       const allItems = listContainer.querySelectorAll('.e-list-item');
       for (const item of allItems) {
         const text = item.textContent.toLowerCase();
-        if (keywords.some(keyword => text.includes(keyword.toLowerCase()))) {
+        if (keywords.some((keyword) => text.includes(keyword.toLowerCase()))) {
           const checkbox = item.querySelector('input[type="checkbox"]');
           if (checkbox && checkbox.checked) return true;
           const checkSpan = item.querySelector('.e-check');
           if (checkSpan) return true;
         }
       }
-      
+
       return false;
     }, itemKeywords);
-    
+
     if (isChecked) {
       this.logger.info(`✓ ${itemName} is checked in point types`);
       return true;
@@ -4767,22 +4793,20 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyRequiredContentVisible(requiredContent) {
     this.logger.step('Verifying required content is visible');
-    
+
     for (const content of requiredContent) {
       const locator = this.page.locator(`text=${content}`).or(this.page.getByText(content, { exact: false }));
       const isVisible = await locator.first().isVisible({ timeout: 5000 }).catch(() => false);
-      
+
       if (!isVisible) {
         // Try broader search in page content
-        const contentExists = await this.page.evaluate((searchText) => {
-          return document.body.innerText.includes(searchText);
-        }, content);
-        
+        const contentExists = await this.page.evaluate((searchText) => document.body.innerText.includes(searchText), content);
+
         if (!contentExists) {
           throw new Error(`Required content not found: ${content}`);
         }
       }
-      
+
       this.logger.info(`✓ Content verified: ${content}`);
     }
   }
@@ -4792,20 +4816,20 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyUnapprovedOnlySelected() {
     this.logger.step('Verify "Unapproved only" option is visible and selected');
-    
+
     const unapprovedLabel = this.page.locator('label').filter({ hasText: /Unapproved only/i }).or(
-      this.page.getByText('Unapproved only', { exact: false })
+      this.page.getByText('Unapproved only', { exact: false }),
     );
     await unapprovedLabel.first().waitFor({ state: 'visible', timeout: 10000 });
     this.logger.info('✓ "Unapproved only" option is visible');
-    
+
     const isUnapprovedSelected = await this.page.evaluate(() => {
       const labels = document.querySelectorAll('label');
       for (const label of labels) {
         if (label.textContent.includes('Unapproved only')) {
-          const radio = label.querySelector('input[type="radio"]') || 
-                       label.previousElementSibling?.querySelector('input[type="radio"]') ||
-                       document.querySelector('input[type="radio"][value*="unapproved"]');
+          const radio = label.querySelector('input[type="radio"]')
+                       || label.previousElementSibling?.querySelector('input[type="radio"]')
+                       || document.querySelector('input[type="radio"][value*="unapproved"]');
           if (radio) return radio.checked;
           return label.classList.contains('e-active') || label.closest('.e-radio-wrapper')?.classList.contains('e-active');
         }
@@ -4817,7 +4841,7 @@ class SiteStatusDashboardPage extends BasePage {
       }
       return null;
     });
-    
+
     if (isUnapprovedSelected !== null) {
       if (!isUnapprovedSelected) {
         throw new Error('"Unapproved only" radio button is not selected');
@@ -4826,7 +4850,7 @@ class SiteStatusDashboardPage extends BasePage {
     } else {
       this.logger.info('✓ "Unapproved only" option verified as visible (radio state check skipped)');
     }
-    
+
     return isUnapprovedSelected;
   }
 
@@ -4836,20 +4860,20 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyDataServicesSelected(dataServices) {
     this.logger.step('Verify Data Services checkboxes are selected');
-    
+
     for (const service of dataServices) {
       const serviceCheckbox = this.page.locator('label').filter({ hasText: new RegExp(service, 'i') }).or(
-        this.page.getByText(service, { exact: false })
+        this.page.getByText(service, { exact: false }),
       );
-      
+
       const isVisible = await serviceCheckbox.first().isVisible({ timeout: 5000 }).catch(() => false);
       if (isVisible) {
         const isChecked = await this.page.evaluate((serviceName) => {
           const labels = document.querySelectorAll('label');
           for (const label of labels) {
             if (label.textContent.toLowerCase().includes(serviceName.toLowerCase())) {
-              const checkbox = label.querySelector('input[type="checkbox"]') ||
-                              label.previousElementSibling?.querySelector('input[type="checkbox"]');
+              const checkbox = label.querySelector('input[type="checkbox"]')
+                              || label.previousElementSibling?.querySelector('input[type="checkbox"]');
               if (checkbox) return checkbox.checked;
               const wrapper = label.closest('.e-checkbox-wrapper');
               if (wrapper) return wrapper.classList.contains('e-check');
@@ -4857,7 +4881,7 @@ class SiteStatusDashboardPage extends BasePage {
           }
           return null;
         }, service);
-        
+
         if (isChecked !== null) {
           if (!isChecked) {
             throw new Error(`"${service}" checkbox is not selected`);
@@ -4879,19 +4903,19 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async findFirstOrangeStatusSpanInColumn(columnName) {
     this.logger.step(`Locate ${columnName} column and capture value from span`);
-    
+
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
     this.logger.info(`${columnName} column index: ${colIndex}`);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
@@ -4899,7 +4923,7 @@ class SiteStatusDashboardPage extends BasePage {
         // Get the first span value regardless of color
         const firstSpan = cell.locator('span').first();
         const spanCount = await firstSpan.count();
-        
+
         if (spanCount > 0) {
           const spanText = (await firstSpan.innerText()).trim();
           // Only capture if it's a valid number > 0
@@ -4907,7 +4931,7 @@ class SiteStatusDashboardPage extends BasePage {
             const value = spanText;
             const siteNameCell = row.locator('td').nth(siteNameColIndex);
             const siteName = (await siteNameCell.innerText()).trim();
-            
+
             this.logger.info(`✓ Found ${columnName} value: ${value}`);
             this.logger.info(`✓ Captured Site Name: ${siteName}`);
             return { value, siteName, cell };
@@ -4915,7 +4939,7 @@ class SiteStatusDashboardPage extends BasePage {
         }
       }
     }
-    
+
     throw new Error(`No span with valid value found in ${columnName}`);
   }
 
@@ -4926,31 +4950,31 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async findFirstCellWithValueInColumn(columnName) {
     this.logger.step(`Search for first row with value in ${columnName}`);
-    
+
     const header = this.getHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
     this.logger.info(`${columnName} column index: ${colIndex}`);
-    
+
     const siteNameHeader = this.getHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rows = this.getGridRows();
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
     const rowCount = await rows.count();
     this.logger.info(`Total rows to check: ${rowCount}`);
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const cell = row.locator('td').nth(colIndex);
         const ngStarInserted = cell.locator('.ng-star-inserted');
         const ngStarCount = await ngStarInserted.count();
-        
+
         if (ngStarCount > 0) {
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
-          
+
           this.logger.info(`✓ Found ng-star-inserted in row ${i + 1}`);
           this.logger.info(`✓ Captured Site Name: ${siteName}`);
           return { siteName, row, colIndex };
@@ -4969,17 +4993,17 @@ class SiteStatusDashboardPage extends BasePage {
   async waitForPaginationCount(maxRetries = 30) {
     let paginationCount = 0;
     let retryCount = 0;
-    
+
     while (retryCount < maxRetries) {
       const paginationSummary = this.page.locator('.e-pagecountmsg, [class*="pagecountmsg"], span:has-text("items)")').filter({ hasText: /\(\d+.*items?\)/ });
-      
+
       const isVisible = await paginationSummary.first().isVisible({ timeout: 5000 }).catch(() => false);
       if (isVisible) {
         const paginationText = await paginationSummary.first().innerText();
         this.logger.info(`Pagination summary text (attempt ${retryCount + 1}): "${paginationText}"`);
-        
+
         const paginationCountMatch = paginationText.match(/\(?([\d,]+)\s*items?\)?/i);
-        
+
         if (paginationCountMatch && paginationCountMatch[1]) {
           paginationCount = parseInt(paginationCountMatch[1].replace(/,/g, ''), 10);
           if (paginationCount > 0) {
@@ -4997,14 +5021,14 @@ class SiteStatusDashboardPage extends BasePage {
           }
         }
       }
-      
+
       retryCount++;
       if (retryCount < maxRetries) {
         this.logger.info(`Pagination shows 0 items, waiting for data to load... (attempt ${retryCount})`);
         await this.page.waitForLoadState('networkidle');
       }
     }
-    
+
     this.logger.info(`Failed to extract pagination count after ${maxRetries} retries, using value: ${paginationCount}`);
     return paginationCount;
   }
@@ -5017,7 +5041,7 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyPointTypeLabel(labelText) {
     const label = this.page.locator(`text=${labelText}`).or(this.page.getByText(labelText, { exact: false }));
     const isLabelVisible = await label.first().isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     if (isLabelVisible) {
       this.logger.info(`✓ ${labelText} label is visible`);
       return true;
@@ -5074,7 +5098,7 @@ class SiteStatusDashboardPage extends BasePage {
    * @returns {Promise<void>}
    */
   async verifySiteNameDropdown(siteName) {
-    const dropdown = this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard').filter({ hasText: siteName});
+    const dropdown = this.page.locator('.e-input-group.e-control-wrapper.e-ddl.e-lib.e-keyboard').filter({ hasText: siteName });
     await expect(dropdown.first()).toBeVisible();
     this.logger.info(`✓ Site name dropdown visible with: ${siteName}`);
   }
@@ -5196,7 +5220,7 @@ class SiteStatusDashboardPage extends BasePage {
     const excelFilter = this.page.getByLabel('Excel filter');
     await excelFilter.waitFor({ state: 'visible' });
     await this.page.waitForLoadState('networkidle');
-    
+
     // Wait a bit for filter to settle
     await this.page.waitForTimeout(500);
 
@@ -5214,7 +5238,7 @@ class SiteStatusDashboardPage extends BasePage {
     const checkboxItem = excelFilter.locator('.e-checkboxfiltertext').filter({ hasText: exactRegex });
     const itemCount = await checkboxItem.count();
     this.logger.info(`Found ${itemCount} items matching "${siteName}" with regex ${exactRegex}`);
-    
+
     if (itemCount > 0) {
       // Get the actual text of the item we're about to click
       const itemText = await checkboxItem.first().innerText();
@@ -5376,13 +5400,13 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyCheckboxState(checkboxText, shouldBeChecked = true) {
     const checkedWrapper = this.page.locator('.e-checkbox-wrapper[aria-checked="true"]').filter({
-      has: this.page.locator(`text=${checkboxText}`)
+      has: this.page.locator(`text=${checkboxText}`),
     }).or(
-      this.page.locator('.e-checkbox-wrapper').filter({ hasText: new RegExp(checkboxText, 'i') }).locator('.e-check')
+      this.page.locator('.e-checkbox-wrapper').filter({ hasText: new RegExp(checkboxText, 'i') }).locator('.e-check'),
     );
-    
+
     const isChecked = await checkedWrapper.first().isVisible({ timeout: 5000 }).catch(() => false);
-    
+
     if (shouldBeChecked && isChecked) {
       this.logger.info(`✓ "${checkboxText}" checkbox is checked`);
       return true;
@@ -5404,11 +5428,11 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyAllLiquidLevelsRowsHaveValue(columnName, expectedValue) {
     const values = await this.getLiquidLevelsColumnValuesByName(columnName);
     expect(values.length).toBeGreaterThan(0);
-    
+
     for (const value of values) {
       expect(value).toBe(expectedValue);
     }
-    
+
     this.logger.info(`✓ All ${values.length} rows have ${columnName} = ${expectedValue}`);
   }
 
@@ -5420,35 +5444,35 @@ class SiteStatusDashboardPage extends BasePage {
   async findFirstLiquidLevelsNgStarInsertedInColumn(columnName) {
     const rows = this.page.locator('#liquid-levels-gird .e-row');
     await rows.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     const header = this.getLiquidLevelsHeader(columnName);
     await header.waitFor({ state: 'visible', timeout: 10000 });
     const colIndex = await this.getColumnIndex(header);
-    
+
     const siteNameHeader = this.getLiquidLevelsHeader('Site Name');
     const siteNameColIndex = await this.getColumnIndex(siteNameHeader);
-    
+
     const rowCount = await rows.count();
     this.logger.info(`Total rows to check: ${rowCount}`);
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const cell = row.locator('td').nth(colIndex);
         const ngStarInserted = cell.locator('.ng-star-inserted');
         const ngStarCount = await ngStarInserted.count();
-        
+
         if (ngStarCount > 0) {
           const siteNameCell = row.locator('td').nth(siteNameColIndex);
           const siteName = (await siteNameCell.innerText()).trim();
-          
+
           this.logger.info(`✓ Found ng-star-inserted in row ${i + 1}`);
           this.logger.info(`✓ Captured Site Name: ${siteName}`);
           return { siteName, row, colIndex };
         }
       }
     }
-    
+
     throw new Error(`No ng-star-inserted element found in ${columnName}`);
   }
 
@@ -5459,24 +5483,24 @@ class SiteStatusDashboardPage extends BasePage {
    * @returns {Promise<{ascending: {actual, expected}, descending: {actual, expected}}>}
    */
   async validateColumnSorting(columnName, gridType = 'liquidLevels') {
-    const header = gridType === 'liquidLevels' 
+    const header = gridType === 'liquidLevels'
       ? this.getLiquidLevelsHeader(columnName)
       : this.getHeader(columnName);
-    
+
     await header.waitFor({ state: 'visible', timeout: 10000 });
-    
+
     // Click to set ascending
     await header.click();
     await this.ensureSortState(header, 'ascending');
-    
+
     const colIndex = await this.getColumnIndex(header);
-    
+
     // Capture values and validate ascending
     const uiAsc = gridType === 'liquidLevels'
       ? await this.getLiquidLevelsColumnValues(colIndex)
       : await this.getColumnValues(colIndex);
     const uiAscNorm = this.normalizeValues(uiAsc);
-    
+
     // Custom sort that handles empty strings (empty values sorted last in ascending)
     const sortAsc = (a, b) => {
       if (a === '' && b === '') return 0;
@@ -5485,16 +5509,16 @@ class SiteStatusDashboardPage extends BasePage {
       return a.localeCompare(b);
     };
     const expectedAscNorm = [...uiAscNorm].sort(sortAsc);
-    
+
     // Click again to set descending
     await header.click();
     await this.ensureSortState(header, 'descending');
-    
+
     const uiDesc = gridType === 'liquidLevels'
       ? await this.getLiquidLevelsColumnValues(colIndex)
       : await this.getColumnValues(colIndex);
     const uiDescNorm = this.normalizeValues(uiDesc);
-    
+
     // Custom sort that handles empty strings (empty values sorted first in descending)
     const sortDesc = (a, b) => {
       if (a === '' && b === '') return 0;
@@ -5503,10 +5527,10 @@ class SiteStatusDashboardPage extends BasePage {
       return b.localeCompare(a);
     };
     const expectedDescNorm = [...uiDescNorm].sort(sortDesc);
-    
+
     return {
       ascending: { actual: uiAscNorm, expected: expectedAscNorm },
-      descending: { actual: uiDescNorm, expected: expectedDescNorm }
+      descending: { actual: uiDescNorm, expected: expectedDescNorm },
     };
   }
 
@@ -5516,17 +5540,17 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyUnapprovedOnlyRadioSelected() {
     const unapprovedLabel = this.page.locator('label').filter({ hasText: /Unapproved only/i }).or(
-      this.page.getByText('Unapproved only', { exact: false })
+      this.page.getByText('Unapproved only', { exact: false }),
     );
     await unapprovedLabel.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     const isUnapprovedSelected = await this.page.evaluate(() => {
       const labels = document.querySelectorAll('label');
       for (const label of labels) {
         if (label.textContent.includes('Unapproved only')) {
-          const radio = label.querySelector('input[type="radio"]') || 
-                       label.previousElementSibling?.querySelector('input[type="radio"]') ||
-                       document.querySelector('input[type="radio"][value*="unapproved"]');
+          const radio = label.querySelector('input[type="radio"]')
+                       || label.previousElementSibling?.querySelector('input[type="radio"]')
+                       || document.querySelector('input[type="radio"][value*="unapproved"]');
           if (radio) return radio.checked;
           return label.classList.contains('e-active') || label.closest('.e-radio-wrapper')?.classList.contains('e-active');
         }
@@ -5538,7 +5562,7 @@ class SiteStatusDashboardPage extends BasePage {
       }
       return null;
     });
-    
+
     return isUnapprovedSelected;
   }
 
@@ -5549,18 +5573,18 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyDataServiceCheckbox(serviceName) {
     const serviceCheckbox = this.page.locator('label').filter({ hasText: new RegExp(serviceName, 'i') }).or(
-      this.page.getByText(serviceName, { exact: false })
+      this.page.getByText(serviceName, { exact: false }),
     );
-    
+
     const isVisible = await serviceCheckbox.first().isVisible({ timeout: 5000 }).catch(() => false);
     if (!isVisible) return null;
-    
+
     const isChecked = await this.page.evaluate((service) => {
       const labels = document.querySelectorAll('label');
       for (const label of labels) {
         if (label.textContent.toLowerCase().includes(service.toLowerCase())) {
-          const checkbox = label.querySelector('input[type="checkbox"]') ||
-                          label.previousElementSibling?.querySelector('input[type="checkbox"]');
+          const checkbox = label.querySelector('input[type="checkbox"]')
+                          || label.previousElementSibling?.querySelector('input[type="checkbox"]');
           if (checkbox) return checkbox.checked;
           const wrapper = label.closest('.e-checkbox-wrapper');
           if (wrapper) return wrapper.classList.contains('e-check');
@@ -5568,7 +5592,7 @@ class SiteStatusDashboardPage extends BasePage {
       }
       return null;
     }, serviceName);
-    
+
     return isChecked;
   }
 
@@ -5578,21 +5602,21 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyReadingGridVisible() {
     const readingGrid = this.page.locator('#readingGrid').or(
-      this.page.locator('[id*="readingGrid"]')
+      this.page.locator('[id*="readingGrid"]'),
     ).or(
-      this.page.locator('.e-grid').filter({ has: this.page.locator('text=READINGS') })
+      this.page.locator('.e-grid').filter({ has: this.page.locator('text=READINGS') }),
     );
     await readingGrid.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     const readingGridContentTable = this.page.locator('#readingGrid_content_table').or(
-      this.page.locator('[id*="readingGrid_content_table"]')
+      this.page.locator('[id*="readingGrid_content_table"]'),
     ).or(
-      this.page.locator('#readingGrid .e-content table')
+      this.page.locator('#readingGrid .e-content table'),
     ).or(
-      this.page.locator('.e-grid .e-content table')
+      this.page.locator('.e-grid .e-content table'),
     );
     await readingGridContentTable.first().waitFor({ state: 'visible', timeout: 10000 });
-    
+
     return true;
   }
 
@@ -5605,28 +5629,30 @@ class SiteStatusDashboardPage extends BasePage {
   async findFirstRowWithReadingApprovalGreaterThanZero(readingApprovalColIndex, siteNameColIndex) {
     const rows = this.page.locator('#liquid-levels-gird .e-row');
     const rowCount = await rows.count();
-    
+
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);
       if (await row.isVisible().catch(() => false)) {
         const readingApprovalCell = row.locator('td').nth(readingApprovalColIndex);
         const spans = readingApprovalCell.locator('span');
         const spanCount = await spans.count();
-        
+
         if (spanCount > 0) {
           const firstSpan = spans.first();
           const cellText = await firstSpan.innerText().catch(() => '');
           const count = parseInt(cellText.trim(), 10) || 0;
-          
+
           if (count > 0) {
             const siteNameCell = row.locator('td').nth(siteNameColIndex);
             const siteName = (await siteNameCell.innerText()).trim();
-            return { count, siteName, row, rowIndex: i };
+            return {
+              count, siteName, row, rowIndex: i,
+            };
           }
         }
       }
     }
-    
+
     return null;
   }
 
@@ -5637,12 +5663,12 @@ class SiteStatusDashboardPage extends BasePage {
   async applyLiquidLevelsSiteNameFilter(siteName) {
     await this.clickLiquidLevelsFilterIcon('Site Name');
     await this.page.waitForLoadState('networkidle');
-    
+
     const searchInput = this.page.locator('.e-searchinput.e-input');
     await searchInput.waitFor({ state: 'visible', timeout: 10000 });
     await searchInput.fill(siteName);
     await this.page.waitForLoadState('networkidle');
-    
+
     const okButton = this.page.getByRole('button', { name: 'OK' });
     await okButton.waitFor({ state: 'visible', timeout: 10000 });
     await okButton.click();
@@ -5666,11 +5692,11 @@ class SiteStatusDashboardPage extends BasePage {
     try {
       const dateRangeText = await dateRangeCombobox.inputValue();
       this.logger.info(`Current date range value: ${dateRangeText}`);
-      
+
       const helper = require('../utils/helper');
       const isCurrentMonth = helper.isCurrentMonthInDateRange(dateRangeText);
       const { currentMonth, currentYear } = helper.getCurrentMonthAndYear();
-      
+
       this.logger.info(`Date range verification: ${isCurrentMonth} (Current: ${currentMonth} ${currentYear}, Range: ${dateRangeText})`);
       return { verified: isCurrentMonth, dateRangeText, message: `Date range default is current month: ${dateRangeText}` };
     } catch (error) {
@@ -5691,7 +5717,7 @@ class SiteStatusDashboardPage extends BasePage {
       expect(dateRangeResult.verified).toBeTruthy();
       this.logger.info(`✓ ${dateRangeResult.message}`);
     } else {
-      this.logger.info(`Date range combobox is visible but text verification skipped`);
+      this.logger.info('Date range combobox is visible but text verification skipped');
     }
   }
 
@@ -5715,7 +5741,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyLiquidLevelsGridSorting(columnNames, expect) {
     this.logger.step('Validate sorting for columns in Liquid Levels grid');
-    
+
     for (const col of columnNames) {
       this.logger.step(`Validate sorting for column: ${col}`);
       const sortResult = await this.validateColumnSorting(col, 'liquidLevels');
@@ -5724,9 +5750,10 @@ class SiteStatusDashboardPage extends BasePage {
       expect(sortResult.descending.actual).toEqual(sortResult.descending.expected);
       this.logger.info(`✓ ${col} sorted descending correctly`);
     }
-    
+
     this.logger.info(`✓ All ${columnNames.length} columns sorted correctly`);
   }
+
   /**
    * Verify Liquid Levels grid sorting for multiple columns
    * This method handles all sorting validation logic including:
@@ -5738,7 +5765,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyLiquidLevelsGridSorting(columnNames, expect) {
     this.logger.step('Validate sorting for columns in Liquid Levels grid');
-    
+
     for (const col of columnNames) {
       this.logger.step(`Validate sorting for column: ${col}`);
       const sortResult = await this.validateColumnSorting(col, 'liquidLevels');
@@ -5747,7 +5774,7 @@ class SiteStatusDashboardPage extends BasePage {
       expect(sortResult.descending.actual).toEqual(sortResult.descending.expected);
       this.logger.info(`✓ ${col} sorted descending correctly`);
     }
-    
+
     this.logger.info(`✓ All ${columnNames.length} columns sorted correctly`);
   }
 
@@ -5758,7 +5785,7 @@ class SiteStatusDashboardPage extends BasePage {
    */
   async verifyUnapprovedOnlyRadioVisibleAndSelected(expect) {
     const isUnapprovedSelected = await this.verifyUnapprovedOnlyRadioSelected();
-    
+
     if (isUnapprovedSelected !== null) {
       expect(isUnapprovedSelected).toBeTruthy();
       this.logger.info('✓ "Unapproved only" radio button is selected by default');
@@ -5775,7 +5802,7 @@ class SiteStatusDashboardPage extends BasePage {
   async verifyDataServicesCheckboxes(dataServices) {
     for (const service of dataServices) {
       const isChecked = await this.verifyDataServiceCheckbox(service);
-      
+
       if (isChecked !== null) {
         expect(isChecked).toBeTruthy();
         this.logger.info(`✓ "${service}" checkbox is selected`);
@@ -5787,4 +5814,3 @@ class SiteStatusDashboardPage extends BasePage {
 }
 
 module.exports = SiteStatusDashboardPage;
-
