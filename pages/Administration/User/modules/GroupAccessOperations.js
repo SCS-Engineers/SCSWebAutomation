@@ -126,32 +126,38 @@ class GroupAccessOperations extends BasePage {
       const removeOption = this.page.locator('text=Remove').first();
       await removeOption.waitFor({ state: 'visible', timeout: 5000 });
       await removeOption.click();
-      await this.page.waitForTimeout(1000);
       this.logger.info('✓ Clicked Remove');
 
-      // Wait and check if "No records to display" appears
-      await this.page.waitForTimeout(2000);
-
-      const noRecordsVisible = await this.page.locator('.e-emptyrecord, .e-grid .e-gridcontent:has-text("No records to display")').first().isVisible().catch(() => false);
-
-      if (noRecordsVisible) {
-        this.logger.info('✓ "No records to display" is visible - removal successful');
+      // After clicking Remove the row turns #bd8585 (pending-deletion state).
+      // The record is NOT removed from the DOM until Save is clicked.
+      // Verify the row background changed to confirm Remove was registered.
+      try {
+        await this.page.waitForFunction(
+          (name) => {
+            const rows = document.querySelectorAll('.e-row');
+            for (const row of rows) {
+              if (row.textContent && row.textContent.includes(name)) {
+                const bg = window.getComputedStyle(row).backgroundColor;
+                // #bd8585 → rgb(189, 133, 133)
+                return bg === 'rgb(189, 133, 133)';
+              }
+            }
+            // Row not found - treat as already removed (save was already done)
+            return true;
+          },
+          groupName,
+          { timeout: 5000 },
+        );
+        this.logger.info(`✓ Row marked for deletion (background #bd8585) — call Save to persist`);
         break;
-      } else {
-        this.logger.info('Record still exists, will retry...');
+      } catch (error) {
+        this.logger.info('Row colour not yet updated, will retry...');
         attempt++;
         await this.page.waitForTimeout(1000);
       }
     }
 
-    // Final verification
-    const finalCheck = await this.page.locator('.e-emptyrecord, .e-grid .e-gridcontent:has-text("No records to display")').first().isVisible().catch(() => false);
-
-    if (finalCheck) {
-      this.logger.info(`✓ Group "${groupName}" successfully removed - "No records to display" confirmed`);
-    } else {
-      this.logger.warn(`⚠ Group "${groupName}" may still exist after ${maxAttempts} attempts`);
-    }
+    this.logger.info(`✓ Group "${groupName}" marked for removal — caller must click Save`);
   }
 
   /**

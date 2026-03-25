@@ -28,11 +28,19 @@ class GridWaitOperations {
   async waitForUserGridToLoad() {
     this.logger.action('Waiting for user grid to fully load');
 
+    // Target the users list grid specifically via its "First name" column header.
+    // Using .first() on .e-gridcontent alone can pick up residual hidden
+    // site-access grids that remain in the DOM after navigating back from
+    // user edit mode, causing spurious timeouts.
+    const usersListGrid = this.page
+      .locator('.e-grid:has(.e-headercelldiv:has-text("First name"))')
+      .first();
+
     // Wait for grid structure to be visible
-    await this.page.locator('.e-gridcontent').first().waitFor({ state: 'visible', timeout: 50000 });
+    await usersListGrid.locator('.e-gridcontent').waitFor({ state: 'visible', timeout: 50000 });
 
     // Wait for actual data rows to populate
-    await this.page.locator('.e-grid .e-row').first().waitFor({ state: 'visible', timeout: 30000 });
+    await usersListGrid.locator('.e-row').first().waitFor({ state: 'visible', timeout: 30000 });
 
     // Wait for spinner to disappear (indicates grid finished loading)
     await this.page.locator('.e-spinner-pane').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {

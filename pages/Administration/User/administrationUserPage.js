@@ -483,6 +483,16 @@ class AdministrationUserPage extends BasePage {
   }
 
   /**
+   * Click the Cancel button to exit edit mode.
+   * Delegates to _exitEditMode — safe to call even if already in view mode.
+   * @returns {Promise<void>}
+   */
+  async clickCancelButton() {
+    this.logger.action('Clicking Cancel button to exit edit mode');
+    await this._exitEditMode();
+  }
+
+  /**
    * Wait for success message to appear and disappear
    * @param {number} timeout - Timeout in milliseconds (default: 30000)
    * @returns {Promise<void>}
@@ -2054,6 +2064,309 @@ class AdministrationUserPage extends BasePage {
   }
 
   /**
+   * Check whether a site row is currently visible in the active grid
+   * @param {string} siteName - Site name to look for
+   * @returns {Promise<boolean>}
+   */
+  async isSiteVisibleInGrid(siteName) {
+    const row = this.page.locator('.e-row').filter({ hasText: siteName }).first();
+    return row.isVisible().catch(() => false);
+  }
+
+  /**
+   * Check whether a group row is currently visible in the active grid
+   * @param {string} groupName - Group name to look for
+   * @returns {Promise<boolean>}
+   */
+  async isGroupVisibleInGrid(groupName) {
+    const row = this.page.locator('.e-row').filter({ hasText: groupName }).first();
+    return row.isVisible().catch(() => false);
+  }
+
+  /**
+   * Open GROUP ACCESS AND PERMISSIONS section
+   * @returns {Promise<void>}
+   */
+  async openGroupAccessPermissions() {
+    return this.navigation.openGroupAccessPermissions();
+  }
+
+  /**
+   * Grant site access to a user — navigates from user list into user edit,
+   * opens SITE ACCESS AND PERMISSIONS, removes any pre-existing access for
+   * the same site, grants fresh access, and saves.
+   *
+   * Assumes the caller is already on the Users List page with the grid ready.
+   *
+   * @param {string} userName - First name to filter by in the user list
+   * @param {string} siteName - Site to grant access to
+   * @returns {Promise<void>}
+   */
+  async grantSiteAccessForUser(userName, siteName) {
+    this.logger.action(`Granting site access for user "${userName}" → site "${siteName}"`);
+
+    await this.filterByFirstName(userName);
+    await this.expandUserListSection();
+    await this.clickEditButton();
+    await this.openSiteAccessPermissions();
+    await this.waitForSiteAccessGridToLoad();
+
+    // If site already has access, remove it first so the grant is clean
+    await this.ensureShowSitesWithAccessGrantedIsSelected();
+    await this.waitForSiteAccessGridToLoad();
+    const alreadyGranted = await this.isSiteVisibleInGrid(siteName);
+    if (alreadyGranted) {
+      this.logger.info(`Site "${siteName}" already has access — removing first for clean state`);
+      await this.disableShowPermissionColumnsWithRetry();
+      await this.waitForAccessStatusColumn();
+      await this.removeAccessForSite(siteName);
+      await this.clickSaveButton();
+      await this.waitForSuccessMessage();
+      await this.clickEditButton();
+      await this.openSiteAccessPermissions();
+      await this.waitForSiteAccessGridToLoad();
+    }
+
+    // Grant access
+    await this.enableShowSitesWithNoAccess();
+    await this.waitForSiteAccessGridToLoad();
+    await this.filterBySiteName(siteName);
+    await this.waitForGridRows();
+    await this.clickSiteCell(siteName);
+    await this.grantAccessToSite(siteName);
+    await this.clickSaveButton();
+    await this.waitForSuccessMessage();
+
+    this.logger.info(`✓ Site access granted for user "${userName}" to site "${siteName}"`);
+  }
+
+  /**
+   * Grant group access to a user — navigates from user list into user edit,
+   * opens GROUP ACCESS AND PERMISSIONS, removes any pre-existing access for
+   * the same group, grants fresh access, and saves.
+   *
+   * Assumes the caller is already on the Users List page with the grid ready.
+   *
+   * @param {string} userName - First name to filter by in the user list
+   * @param {string} groupName - Group to grant access to
+   * @returns {Promise<void>}
+   */
+  async grantGroupAccessForUser(userName, groupName) {
+    this.logger.action(`Granting group access for user "${userName}" → group "${groupName}"`);
+
+    await this.filterByFirstName(userName);
+    await this.expandUserListSection();
+    await this.clickEditButton();
+    await this.openGroupAccessPermissions();
+    await this.waitForGridRows();
+
+    // If group already has access, remove it first so the grant is clean
+    await this.enableShowGroupsWithAccessGranted();
+    await this.waitForGridRows();
+    const alreadyGranted = await this.isGroupVisibleInGrid(groupName);
+    if (alreadyGranted) {
+      this.logger.info(`Group "${groupName}" already has access — removing first for clean state`);
+      await this.removeAccessForGroup(groupName);
+      await this.clickSaveButton();
+      await this.waitForSuccessMessage();
+      await this.clickEditButton();
+      await this.openGroupAccessPermissions();
+      await this.waitForGridRows();
+    }
+
+    // Grant access
+    await this.enableShowGroupsWithNoAccess();
+    await this.waitForGridRows();
+    await this.filterByGroupName(groupName);
+    await this.waitForGroupCellVisible(groupName);
+    await this.grantAccessToGroup(groupName);
+    await this.clickSaveButton();
+    await this.waitForSuccessMessage();
+
+    // Verify grant persisted: click Edit → Show groups with access granted → check group visible
+    this.logger.info(`Verifying group access grant persisted for "${groupName}"…`);
+    await this.clickEditButton();
+    await this.openGroupAccessPermissions();
+    await this.waitForGridRows();
+    await this.enableShowGroupsWithAccessGranted();
+    await this.waitForGridRows();
+
+    const grantConfirmed = await this.isGroupVisibleInGrid(groupName);
+    if (!grantConfirmed) {
+      throw new Error(
+        `Group access grant verification FAILED: "${groupName}" is NOT visible under ` +
+        `"Show groups with access granted" after save.`
+      );
+    }
+    this.logger.info(`✓ Verified: "${groupName}" is visible under "Show groups with access granted"`);
+
+    this.logger.info(`✓ Group access granted for user "${userName}" to group "${groupName}"`);
+  }
+
+  /**
+   * Fully standalone cleanup — removes site access for a user with retry logic.
+   *
+   * Navigates to the user list on each retry attempt, re-enters edit mode,
+   * removes the site access, saves, then verifies the removal. Retries up to
+   * 3 times if the site remains visible after saving.
+   *
+   * Safe to call from test `finally` blocks — swallows errors and logs warnings.
+   *
+   * @param {string} userName - First name to filter by in the user list
+   * @param {string} siteName - Site name to remove access from
+   * @returns {Promise<void>}
+   */
+  async cleanupUserSiteAccess(userName, siteName) {
+    this.logger.action(`Cleanup — removing site access "${siteName}" for user "${userName}"`);
+    try {
+      const maxRetries = 3;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        this.logger.info(`Cleanup attempt ${attempt}/${maxRetries}`);
+
+        await this.navigateToUsersList();
+        await this.waitForUserGridToLoad();
+        await this.waitForUserGridFilterReady();
+        await this.filterByFirstName(userName);
+        await this.expandUserListSection();
+        await this.clickEditButton();
+        await this.openSiteAccessPermissions();
+        await this.waitForSiteAccessGridToLoad();
+        await this.ensureShowSitesWithAccessGrantedIsSelected();
+        await this.waitForSiteAccessGridToLoad();
+        await this.disableShowPermissionColumnsWithRetry();
+        await this.waitForAccessStatusColumn();
+
+        const siteVisible = await this.isSiteVisibleInGrid(siteName);
+        if (!siteVisible) {
+          this.logger.info(`✓ Site "${siteName}" not found — already removed`);
+          await this._exitEditMode();
+          break;
+        }
+
+        await this.removeAccessForSite(siteName);
+        await this.clickSaveButton();
+        await this.waitForSuccessMessage();
+        this.logger.info(`✓ Save completed on attempt ${attempt}`);
+
+        // Verify by clicking Edit and re-checking
+        await this.clickEditButton();
+        await this.waitForSiteAccessGridToLoad();
+        await this.disableShowPermissionColumnsWithRetry();
+        await this.ensureShowSitesWithAccessGrantedIsSelected();
+        await this.waitForSiteAccessGridToLoad();
+
+        const stillVisible = await this.isSiteVisibleInGrid(siteName);
+        if (!stillVisible) {
+          this.logger.info(`✓ Successfully removed site access: "${siteName}"`);
+          await this._exitEditMode();
+          break;
+        }
+
+        if (attempt === maxRetries) {
+          this.logger.warn(`⚠ Site "${siteName}" still visible after ${maxRetries} attempts`);
+        } else {
+          this.logger.warn(`Site "${siteName}" still visible after save — retrying...`);
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Cleanup warning for site "${siteName}": ${error.message}`);
+    }
+  }
+
+  /**
+   * Fully standalone cleanup — removes group access for a user with retry logic.
+   *
+   * Navigates to the user list on each retry attempt, re-enters edit mode,
+   * removes the group access, saves, then verifies the removal. Retries up to
+   * 3 times if the group remains visible after saving.
+   *
+   * Safe to call from test `finally` blocks — swallows errors and logs warnings.
+   *
+   * @param {string} userName - First name to filter by in the user list
+   * @param {string} groupName - Group name to remove access from
+   * @returns {Promise<void>}
+   */
+  async cleanupUserGroupAccess(userName, groupName) {
+    this.logger.action(`Cleanup — removing group access "${groupName}" for user "${userName}"`);
+    try {
+      const maxRetries = 3;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        this.logger.info(`Cleanup attempt ${attempt}/${maxRetries}`);
+
+        await this.navigateToUsersList();
+        await this.waitForUserGridToLoad();
+        await this.waitForUserGridFilterReady();
+        await this.filterByFirstName(userName);
+        await this.expandUserListSection();
+        await this.clickEditButton();
+        await this.openGroupAccessPermissions();
+        await this.waitForGridRows();
+        await this.enableShowGroupsWithAccessGranted();
+        await this.waitForGridRows();
+
+        const groupVisible = await this.isGroupVisibleInGrid(groupName);
+        if (!groupVisible) {
+          this.logger.info(`✓ Group "${groupName}" not found — already removed`);
+          await this._exitEditMode();
+          break;
+        }
+
+        await this.removeAccessForGroup(groupName);
+        await this.clickSaveButton();
+        await this.waitForSuccessMessage();
+        this.logger.info(`✓ Save completed on attempt ${attempt}`);
+
+        // Verify by clicking Edit and re-checking
+        await this.clickEditButton();
+        await this.openGroupAccessPermissions();
+        await this.enableShowGroupsWithAccessGranted();
+        await this.waitForGridRows();
+
+        const stillVisible = await this.isGroupVisibleInGrid(groupName);
+        if (!stillVisible) {
+          this.logger.info(`✓ Successfully removed group access: "${groupName}"`);
+          await this._exitEditMode();
+          break;
+        }
+
+        if (attempt === maxRetries) {
+          this.logger.warn(`⚠ Group "${groupName}" still visible after ${maxRetries} attempts`);
+        } else {
+          this.logger.warn(`Group "${groupName}" still visible after save — retrying...`);
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Cleanup warning for group "${groupName}": ${error.message}`);
+    }
+  }
+
+  /**
+   * Click the Cancel button to exit edit mode, if present.
+   * Waits for networkidle so the page fully transitions back to view/list state.
+   * Safe to call when NOT in edit mode — silently skips if Cancel is not found.
+   * @private
+   * @returns {Promise<void>}
+   */
+  async _exitEditMode() {
+    try {
+      const cancelBtn = this.page.locator(
+        'button.e-btn.e-small.scs-inline-right.e-info:has-text("Cancel"), button:has-text("Cancel")',
+      ).first();
+      const isVisible = await cancelBtn.isVisible({ timeout: 3000 }).catch(() => false);
+      if (isVisible) {
+        await cancelBtn.click();
+        await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        await this.page.waitForTimeout(1000);
+        this.logger.info('✓ Exited edit mode via Cancel button');
+      } else {
+        this.logger.info('Not in edit mode — no Cancel button found, skipping');
+      }
+    } catch (error) {
+      this.logger.warn(`_exitEditMode: ${error.message}`);
+    }
+  }
+
+  /**
    * Get a date value from Access Expiration column
    * @returns {Promise<string>} Date value in MM/DD/YYYY format
    * @throws {Error} If no date value found
@@ -2063,6 +2376,381 @@ class AdministrationUserPage extends BasePage {
       this._findAccessExpirationHeader.bind(this),
       this._findDateValuesAfterIndex.bind(this)
     );
+  }
+
+  /**
+   * Get first N first names from the user grid "First name" column
+   * @param {number} count - Number of first names to retrieve (default: 5)
+   * @returns {Promise<string[]>} Array of first name strings
+   */
+  async getFirstNamesFromUserGrid(count = 5) {
+    return this.filterOps.getFirstNamesFromUserGrid(count);
+  }
+
+  /**
+   * Select a site from an EJ2 dropdown by element ID (type-and-select)
+   * @param {string} dropdownId - The element ID of the EJ2 dropdown input
+   * @param {string} siteName - The site name to type and select
+   * @returns {Promise<void>}
+   */
+  async selectSiteFromDropdownById(dropdownId, siteName) {
+    return this.filterOps.selectSiteFromDropdownById(dropdownId, siteName);
+  }
+
+  /**
+   * Click the "Assigned to selected site" checkbox label to toggle filter
+   * @returns {Promise<void>}
+   */
+  async clickAssignedToSelectedSiteCheckbox() {
+    return this.filterOps.clickAssignedToSelectedSiteCheckbox();
+  }
+
+  /**
+   * Uncheck "Assigned to selected site" if currently active, restoring the full user grid
+   * @returns {Promise<void>}
+   */
+  async resetAssignedToSiteFilter() {
+    return this.filterOps.resetAssignedToSiteFilter();
+  }
+
+  /**
+   * Verify that all specified first names are visible in the user grid
+   * @param {string[]} firstNames - Array of first names to verify as present
+   * @returns {Promise<void>}
+   */
+  async verifyFirstNamesPresent(firstNames) {
+    return this.filterOps.verifyFirstNamesPresent(firstNames);
+  }
+
+  /**
+   * Verify that only the specified first names are visible in the user grid
+   * @param {string[]} expectedNames - Array of first names that should be the only ones visible
+   * @returns {Promise<void>}
+   */
+  async verifyOnlyFirstNamesVisible(expectedNames) {
+    return this.filterOps.verifyOnlyFirstNamesVisible(expectedNames);
+  }
+
+  /**
+   * Verify a first name is NOT visible in the user grid
+   * @param {string} firstName - First name expected to be absent
+   * @returns {Promise<void>}
+   */
+  async verifyFirstNameNotVisible(firstName) {
+    return this.filterOps.verifyFirstNameNotVisible(firstName);
+  }
+
+  /**
+   * Get all column header texts from the Users list grid
+   * @returns {Promise<string[]>} Array of column header strings
+   */
+  async getUserListGridColumnHeaders() {
+    return this.filterOps.getUserListGridColumnHeaders();
+  }
+
+  /**
+   * Verify Access Expiration column is visible between Last Login and Created On
+   * in the Users list grid
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationColumnVisibleInUserGrid() {
+    return this.filterOps.verifyAccessExpirationColumnVisibleInUserGrid();
+  }
+
+  /**
+   * Verify Access Expiration column is NOT visible in the Users list grid
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationColumnNotVisibleInUserGrid() {
+    return this.filterOps.verifyAccessExpirationColumnNotVisibleInUserGrid();
+  }
+
+  /**
+   * Get the Access Expiration cell value for a user in the Users list grid
+   * @param {string} userName - First name of the user
+   * @returns {Promise<string>} The cell text
+   */
+  async getAccessExpirationValueForUser(userName) {
+    return this.filterOps.getAccessExpirationValueForUser(userName);
+  }
+
+  /**
+   * Verify Access Expiration date format (MM/DD/YYYY) for a user in the Users list grid
+   * @param {string} userName - First name of the user
+   * @returns {Promise<string>} The date value
+   */
+  async verifyAccessExpirationDateFormatInUserGrid(userName) {
+    return this.filterOps.verifyAccessExpirationDateFormatInUserGrid(userName);
+  }
+
+  /**
+   * Verify Access Expiration cell is empty for a user in the Users list grid
+   * @param {string} userName - First name of the user
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationCellEmptyForUser(userName) {
+    return this.filterOps.verifyAccessExpirationCellEmptyForUser(userName);
+  }
+
+  /**
+   * Get all visible Access Expiration values from the Users list grid
+   * @returns {Promise<string[]>} Array of cell text values
+   */
+  async getAllAccessExpirationValues() {
+    return this.filterOps.getAllAccessExpirationValues();
+  }
+
+  /**
+   * Sort Access Expiration column in ascending order in Users list grid
+   * @returns {Promise<void>}
+   */
+  async sortAccessExpirationAscending() {
+    return this.filterOps.sortAccessExpirationAscending();
+  }
+
+  /**
+   * Sort Access Expiration column in descending order in Users list grid
+   * @returns {Promise<void>}
+   */
+  async sortAccessExpirationDescending() {
+    return this.filterOps.sortAccessExpirationDescending();
+  }
+
+  /**
+   * Verify Access Expiration values are sorted ascending in Users list grid
+   * @returns {Promise<string[]>} The sorted values
+   */
+  async verifyAccessExpirationSortedAscending() {
+    return this.filterOps.verifyAccessExpirationSortedAscending();
+  }
+
+  /**
+   * Verify Access Expiration values are sorted descending in Users list grid
+   * @returns {Promise<string[]>} The sorted values
+   */
+  async verifyAccessExpirationSortedDescending() {
+    return this.filterOps.verifyAccessExpirationSortedDescending();
+  }
+
+  /**
+   * Filter Access Expiration column by a specific value in Users list grid
+   * @param {string} searchText - Value to filter by
+   * @returns {Promise<void>}
+   */
+  async filterAccessExpirationByValue(searchText) {
+    return this.filterOps.filterAccessExpirationByValue(searchText);
+  }
+
+  /**
+   * Filter Access Expiration column to show only blank values in Users list grid
+   * @returns {Promise<void>}
+   */
+  async filterAccessExpirationByBlanks() {
+    return this.filterOps.filterAccessExpirationByBlanks();
+  }
+
+  /**
+   * Clear the filter on the Access Expiration column in Users list grid
+   * @returns {Promise<void>}
+   */
+  async clearAccessExpirationColumnFilter() {
+    return this.filterOps.clearAccessExpirationColumnFilter();
+  }
+
+  /**
+   * Verify all visible Access Expiration values match the expected value
+   * @param {string} expectedValue - Expected cell value
+   * @returns {Promise<number>} Count of rows verified
+   */
+  async verifyAllAccessExpirationValuesMatch(expectedValue) {
+    return this.filterOps.verifyAllAccessExpirationValuesMatch(expectedValue);
+  }
+
+  /**
+   * Verify all visible Access Expiration cells are empty
+   * @returns {Promise<number>} Count of rows verified
+   */
+  async verifyAllAccessExpirationValuesEmpty() {
+    return this.filterOps.verifyAllAccessExpirationValuesEmpty();
+  }
+
+  // ── Access Expiration Context Menu & Popup Delegates ───────────
+
+  /**
+   * Click/select a user row in the Users list grid
+   * @param {string} userName - First name of the user
+   * @returns {Promise<void>}
+   */
+  async clickUserRowInGrid(userName) {
+    return this.filterOps.clickUserRowInGrid(userName);
+  }
+
+  /**
+   * Verify the user row is highlighted (selected/yellow) in the grid
+   * @param {string} userName - First name of the user
+   * @returns {Promise<void>}
+   */
+  async verifyUserRowHighlighted(userName) {
+    return this.filterOps.verifyUserRowHighlighted(userName);
+  }
+
+  /**
+   * Right-click the Access Expiration cell for a user
+   * @param {string} userName - First name of the user
+   * @returns {Promise<void>}
+   */
+  async rightClickAccessExpirationCell(userName) {
+    return this.filterOps.rightClickAccessExpirationCell(userName);
+  }
+
+  /**
+   * Verify the context menu item is visible
+   * @param {string} menuItemText - Context menu item text
+   * @returns {Promise<void>}
+   */
+  async verifyContextMenuItemVisible(menuItemText) {
+    return this.filterOps.verifyContextMenuItemVisible(menuItemText);
+  }
+
+  /**
+   * Click a context menu item
+   * @param {string} menuItemText - Context menu item text
+   * @returns {Promise<void>}
+   */
+  async clickContextMenuItem(menuItemText) {
+    return this.filterOps.clickContextMenuItem(menuItemText);
+  }
+
+  /**
+   * Verify the Access Expiration Dates popup is visible
+   * @param {string} popupTitle - Expected popup title
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationPopupVisible(popupTitle) {
+    return this.filterOps.verifyAccessExpirationPopupVisible(popupTitle);
+  }
+
+  /**
+   * Select a future date in the popup calendar
+   * @returns {Promise<string>} Selected date in MM/DD/YYYY format
+   */
+  async selectFutureDateInPopupCalendar() {
+    return this.filterOps.selectFutureDateInPopupCalendar();
+  }
+
+  /**
+   * Clear the date in the popup using the clear icon
+   * @returns {Promise<void>}
+   */
+  async clearDateInPopup() {
+    return this.filterOps.clearDateInPopup();
+  }
+
+  /**
+   * Click the "Apply to all" checkbox in the popup
+   * @param {string} labelText - Checkbox label text
+   * @returns {Promise<void>}
+   */
+  async clickApplyToAllFilteredUsersCheckbox(labelText) {
+    return this.filterOps.clickApplyToAllFilteredUsersCheckbox(labelText);
+  }
+
+  /**
+   * Click "Save and Exit" button in the popup
+   * @param {string} buttonText - Button text
+   * @returns {Promise<void>}
+   */
+  async clickSaveAndExitInPopup(buttonText) {
+    return this.filterOps.clickSaveAndExitInPopup(buttonText);
+  }
+
+  /**
+   * Verify confirmation popup message
+   * @param {string} expectedMessage - Expected message
+   * @returns {Promise<void>}
+   */
+  async verifyConfirmationPopupMessage(expectedMessage) {
+    return this.filterOps.verifyConfirmationPopupMessage(expectedMessage);
+  }
+
+  /**
+   * Click YES on confirmation popup
+   * @returns {Promise<void>}
+   */
+  async clickYesOnConfirmation() {
+    return this.filterOps.clickYesOnConfirmation();
+  }
+
+  /**
+   * Verify access expiration success message
+   * @param {string} expectedMessage - Expected success message
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationSuccessMessage(expectedMessage) {
+    return this.filterOps.verifyAccessExpirationSuccessMessage(expectedMessage);
+  }
+
+  /**
+   * Verify Access Expiration value matches expected date for a user
+   * @param {string} userName - User first name
+   * @param {string} expectedDate - Expected date string
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationValueForUser(userName, expectedDate) {
+    return this.filterOps.verifyAccessExpirationValueForUser(
+      userName, expectedDate,
+    );
+  }
+
+  /**
+   * Get the state of a context menu item (visible/disabled)
+   * @param {string} menuItemText - Menu item text
+   * @returns {Promise<{visible: boolean, disabled: boolean}>}
+   */
+  async getContextMenuItemState(menuItemText) {
+    return this.filterOps.getContextMenuItemState(menuItemText);
+  }
+
+  /**
+   * Verify a context menu item is visible and disabled
+   * @param {string} menuItemText - Text of the menu item
+   * @returns {Promise<void>}
+   */
+  async verifyContextMenuItemDisabled(menuItemText) {
+    return this.filterOps.verifyContextMenuItemDisabled(menuItemText);
+  }
+
+  /**
+   * Read the current value from the datepicker in the Access Expiration popup
+   * @returns {Promise<string>} The date value in MM/DD/YYYY format
+   */
+  async getPopupDatePickerValue() {
+    return this.filterOps.getPopupDatePickerValue();
+  }
+
+  /**
+   * Verify the popup datepicker default date is today + 1 year
+   * @returns {Promise<void>}
+   */
+  async verifyPopupDateIsDefaultOneYearFromToday() {
+    return this.filterOps.verifyPopupDateIsDefaultOneYearFromToday();
+  }
+
+  /**
+   * Verify the popup datepicker shows a specific expected date
+   * @param {string} expectedDate - Expected date string (MM/DD/YYYY)
+   * @returns {Promise<void>}
+   */
+  async verifyPopupDateMatchesExpectedDate(expectedDate) {
+    return this.filterOps.verifyPopupDateMatchesExpectedDate(expectedDate);
+  }
+
+  /**
+   * Click Cancel button in the Access Expiration popup
+   * @returns {Promise<void>}
+   */
+  async clickCancelInPopup() {
+    return this.filterOps.clickCancelInPopup();
   }
 
   /**

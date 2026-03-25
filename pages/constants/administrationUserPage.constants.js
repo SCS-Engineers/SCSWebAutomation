@@ -17,6 +17,7 @@ module.exports = {
 
   // Site Access and Permissions locators
   siteAccessPermissionsHeader: 'text=SITE ACCESS AND PERMISSIONS',
+  groupAccessPermissionsHeader: 'text=GROUP ACCESS AND PERMISSIONS',
   showSitesNoAccessRadio: 'text=Show sites with no access granted',
   showSitesWithAccessRadio: 'text=Show sites with access granted',
   showGroupsNoAccessRadio: 'text=Show groups with no access granted',
