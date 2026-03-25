@@ -70,7 +70,7 @@ class SiteAccessOperations {
         const rowExists = await siteRow.count() > 0;
 
         if (!rowExists) {
-          this.logger.info('Row no longer visible, checking for "No records to display"');
+          this.logger.info('Row no longer visible after previous save - removal already complete');
           break;
         }
 
@@ -91,25 +91,35 @@ class SiteAccessOperations {
         await removeOption.click();
         this.logger.info('✓ Clicked Remove');
 
-        // Wait for "No records to display" to appear or row to disappear
+        // After clicking Remove the row turns #bd8585 (pending-deletion state).
+        // The record is NOT removed from the DOM until Save is clicked.
+        // Verify the row background changed to confirm Remove was registered.
         try {
-          await this.page.locator('.e-emptyrecord, .e-grid .e-gridcontent:has-text("No records to display")').first().waitFor({ state: 'visible', timeout: 3000 });
-          this.logger.info('✓ "No records to display" is visible - removal successful');
+          await this.page.waitForFunction(
+            (name) => {
+              const rows = document.querySelectorAll('.e-row');
+              for (const row of rows) {
+                if (row.textContent && row.textContent.includes(name)) {
+                  const bg = window.getComputedStyle(row).backgroundColor;
+                  // #bd8585 → rgb(189, 133, 133)
+                  return bg === 'rgb(189, 133, 133)';
+                }
+              }
+              // Row not found - treat as already removed (save was already done)
+              return true;
+            },
+            siteName,
+            { timeout: 5000 },
+          );
+          this.logger.info(`✓ Row marked for deletion (background #bd8585) — call Save to persist`);
           break;
         } catch (error) {
-          this.logger.info('Record still exists, will retry...');
+          this.logger.info('Row colour not yet updated, will retry...');
           attempt++;
         }
       }
 
-      // Final verification
-      const finalCheck = await this.page.locator('.e-emptyrecord, .e-grid .e-gridcontent:has-text("No records to display")').first().isVisible().catch(() => false);
-
-      if (finalCheck) {
-        this.logger.info(`✓ Site "${siteName}" successfully removed - "No records to display" confirmed`);
-      } else {
-        this.logger.warn(`⚠ Site "${siteName}" may still exist after ${maxAttempts} attempts`);
-      }
+      this.logger.info(`✓ Site "${siteName}" marked for removal — caller must click Save`);
     } else {
       throw new Error(`Could not find grid with Access Status column for site: ${siteName}`);
     }

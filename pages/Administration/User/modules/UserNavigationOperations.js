@@ -74,12 +74,44 @@ class UserNavigationOperations extends BasePage {
   }
 
   /**
-   * Expand user list section by dragging resize handler up
-   * @param {number} pixels - Number of pixels to drag up (default: 200)
+   * Open GROUP ACCESS AND PERMISSIONS section by clicking the collapsible header.
+   * If the header is not found (e.g., section is always visible), the method
+   * logs a warning and continues safely.
+   * @returns {Promise<void>}
+   */
+  async openGroupAccessPermissions() {
+    this.logger.action('Opening GROUP ACCESS AND PERMISSIONS section');
+
+    try {
+      const header = this.page.locator(LOCATORS.groupAccessPermissionsHeader).first();
+      const isHeaderVisible = await header.isVisible({ timeout: 5000 }).catch(() => false);
+
+      if (isHeaderVisible) {
+        // Check if section is already expanded by looking for collapse icon
+        const isExpanded = await header.locator('..').locator('.e-icons.e-chev-up-icon').isVisible().catch(() => false);
+
+        if (!isExpanded) {
+          await header.click();
+          await this.page.waitForTimeout(1000);
+          this.logger.info('✓ GROUP ACCESS AND PERMISSIONS section expanded by clicking header');
+        } else {
+          this.logger.info('✓ GROUP ACCESS AND PERMISSIONS section already expanded');
+        }
+      } else {
+        this.logger.info('✓ GROUP ACCESS header not found - assuming section is already visible');
+      }
+    } catch (error) {
+      this.logger.warn(`Could not open GROUP ACCESS section: ${error.message}`);
+    }
+  }
+
+  /**
+   * Expand user list section by dragging resize handler down
+   * @param {number} pixels - Number of pixels to drag down (default: 200)
    * @returns {Promise<void>}
    */
   async expandUserListSection(pixels = 200) {
-    this.logger.action(`Expanding user list section by dragging resize handler up ${pixels} pixels`);
+    this.logger.action(`Expanding user list section by dragging resize handler down ${pixels} pixels`);
 
     const resizeHandler = this.page.locator(LOCATORS.resizeHandler).first();
     const isResizeHandlerVisible = await resizeHandler.isVisible().catch(() => false);
@@ -87,13 +119,13 @@ class UserNavigationOperations extends BasePage {
     if (isResizeHandlerVisible) {
       const box = await resizeHandler.boundingBox();
       if (box) {
-        // Drag up to expand the top section (user list)
+        // Drag down to expand the top section (user list)
         await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
         await this.page.mouse.down();
-        await this.page.mouse.move(box.x + box.width / 2, box.y - pixels);
+        await this.page.mouse.move(box.x + box.width / 2, box.y + pixels);
         await this.page.mouse.up();
         await this.page.waitForTimeout(1000);
-        this.logger.info('✓ Dragged resize handler up to expand user list section');
+        this.logger.info('✓ Dragged resize handler down to expand user list section');
       }
     } else {
       this.logger.info('Resize handler not visible, skipping');

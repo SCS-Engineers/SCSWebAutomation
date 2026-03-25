@@ -123,6 +123,90 @@
     "administrationUserTest34": {
       "siteName": "PW Automation ADMIN32 Site",
       "datePattern": "^\\d{1,2}/\\d{1,2}/\\d{4}$"
+    },
+    "filterBySiteAssignment": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation S1",
+      "assignedUsers": ["PW Automation Admin User1", "PW Automation Admin User2"],
+      "firstNamesCount": 5
+    },
+    "filterBySiteAssignment03": {
+      "userName": "PW Automation U1",
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation S1",
+      "groupName": "playwright GL1",
+      "groupSiteName": "PW Automation S5"
+    },
+    "filterBySiteAssignment04": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "site1": "PW Automation S2",
+      "site1AssignedUsers": ["PW Automation Admin User1", "PW Automation Admin User2"],
+      "site2": "PW Automation S5",
+      "site2AssignedUsers": ["PW Automation Admin User1"],
+      "site2NotVisibleUsers": ["PW Automation Admin User2"]
+    },
+    "filterBySiteAssignment05": {
+      "userName": "PW Automation FBSA User1",
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation FBSA Site1"
+    },
+    "filterBySiteAssignment06": {
+      "userName": "PW Automation FBSA User1",
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation FBSA Site1"
+    },
+    "filterBySiteAssignment07": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "AD_Test_Site_001"
+    },
+    "filterBySiteAssignment08": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "AD_Test_Site_001"
+    },
+    "filterBySiteAssignment09": {
+      "userName": "PW Automation FBSA User1",
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation FBSA Site1"
+    },
+    "filterBySiteAssignment10_13": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation FBSA S6",
+      "user1": "PW Automation FBSA User1",
+      "user2": "PW Automation FBSA User2",
+      "user3": "PW Automation FBSA User3",
+      "groupName": "PW Automation GL1",
+      "contextMenuItem": "Edit Exp. Dates",
+      "popupTitle": "Access Expiration Dates",
+      "applyToAllLabel": "Apply to all filtered users who have site level access.",
+      "saveAndExitLabel": "Save and Exit",
+      "successMessage": "Access expiration date updated successfully.",
+      "confirmUpdateAll": "2 user(s) will be updated with the access expiration date {date}. Do you want to proceed?",
+      "confirmUpdateSingle": "The selected user will be updated with the access expiration date {date}. Do you want to proceed?",
+      "confirmClearAll": "2 user(s) will have the access expiration cleared. Do you want to proceed?",
+      "confirmClearSingle": "The selected user will have the access expiration cleared. Do you want to proceed?"
+    },
+    "filterBySiteAssignment14_15": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation FBSA S6",
+      "user1": "PW Automation FBSA User1",
+      "contextMenuItem": "Edit Exp. Dates",
+      "popupTitle": "Access Expiration Dates",
+      "cancelLabel": "Cancel"
+    },
+    "filterBySiteAssignment16_17": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation FBSA S6",
+      "user1": "PW Automation FBSA User1",
+      "user3": "PW Automation FBSA User3",
+      "groupName": "PW Automation GL1"
+    },
+    "filterBySiteAssignment20": {
+      "siteDropdownId": "ej2_dropdownlist_5269",
+      "siteName": "PW Automation FBSA S6",
+      "user1": "PW Automation FBSA User1",
+      "user3": "PW Automation FBSA User3",
+      "groupName": "PW Automation GL1",
+      "contextMenuItem": "Edit Exp. Dates"
     }
   }
 }

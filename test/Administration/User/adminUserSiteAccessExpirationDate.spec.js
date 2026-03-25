@@ -2,21 +2,23 @@ const { test, expect } = require('@playwright/test');
 const TestSetup = require('../../../utils/testSetup');
 const logger = require('../../../utils/logger');
 const testData = require('../../../data/testData.json');
-
-// Wait time constants for explicit timing requirements
-// Note: These values are tuned for the system's load times - modify with caution
-const WAIT_TIMES = {
-  GRID_STABILIZATION: 3000,
-  PERMISSION_RENDER: 2500,
-  FILTER_DELAY: 1000,
-  SHORT_DELAY: 500,
-};
+const credentials = require('../../../utils/credentials');
 
 /**
  * Test suite for Admin User Management - Site Access Expiration Date functionality
  * Verifies expiration date management, access status indicators, and permission controls
  */
 test.describe('Admin User Mgmt Site Access Expiration Date', () => {
+  /** Wait time constants — tuned for the system's load times; modify with caution */
+  const WAIT_TIMES = {
+    GRID_STABILIZATION: 3000,
+    PERMISSION_RENDER: 2500,
+    FILTER_DELAY: 1000,
+    SHORT_DELAY: 500,
+  };
+  /** Max retry attempts for cleanup operations */
+  const MAX_CLEANUP_RETRIES = 3;
+
   let testSetup;
   let administrationUserPage;
 
@@ -114,41 +116,123 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
 
   /**
    * Helper: Cleanup site access
-   * Removes site access with proper waits and error handling
+   * Removes site access, saves, then verifies by clicking Edit and re-checking.
+   * Retries up to 3 times if the site is still visible after save.
    * @param {string} siteName - Site name to remove access from
    * @returns {Promise<void>}
    */
   const cleanupSiteAccess = async (siteName) => {
     try {
       logger.step(`Cleanup - Removing access for site: ${siteName}`);
-      
-      // Ensure we're in the correct view
-      await administrationUserPage.ensureShowSitesWithAccessGrantedIsSelected();
-      await administrationUserPage.waitForSiteAccessGridToLoad();
 
-      // Ensure permission columns are disabled so the Access Status column is visible.
-      // This is required because ensureShowSitesWithAccessGrantedIsSelected() may trigger
-      // a grid reload that resets the "Show permission columns" checkbox to its default
-      // (enabled) state, which hides the Access Status column that removeAccessForSite()
-      // uses to identify the correct grid.
-      await administrationUserPage.disableShowPermissionColumnsWithRetry();
-      await administrationUserPage.waitForAccessStatusColumn();
-      
-      // Try to find and remove the site
-      await administrationUserPage.removeAccessForSite(siteName);
-      await administrationUserPage.clickSaveButton();
-      await administrationUserPage.waitForSuccessMessage();
-      
-      logger.info(`✓ Successfully removed access for site: ${siteName}`);
+      for (let attempt = 1; attempt <= MAX_CLEANUP_RETRIES; attempt++) {
+        logger.info(`Cleanup attempt ${attempt}/${MAX_CLEANUP_RETRIES}`);
+
+        // Ensure correct view with Access Status column visible
+        await administrationUserPage.ensureShowSitesWithAccessGrantedIsSelected();
+        await administrationUserPage.waitForSiteAccessGridToLoad();
+        await administrationUserPage.disableShowPermissionColumnsWithRetry();
+        await administrationUserPage.waitForAccessStatusColumn();
+
+        // Check if site is still in the grid before trying to remove it
+        const isSiteVisible = await administrationUserPage.isSiteVisibleInGrid(siteName);
+        if (!isSiteVisible) {
+          logger.info(`✓ Site "${siteName}" not found in grid - already removed`);
+          break;
+        }
+
+        // Right-click → Remove → verify #bd8585 row colour
+        await administrationUserPage.removeAccessForSite(siteName);
+
+        // Save and wait for success message
+        await administrationUserPage.clickSaveButton();
+        await administrationUserPage.waitForSuccessMessage();
+        logger.info(`✓ Save completed on attempt ${attempt}`);
+
+        // Verify: click Edit, restore view, then check if site is still present
+        await administrationUserPage.clickEditButton();
+        await administrationUserPage.waitForSiteAccessGridToLoad();
+        await administrationUserPage.disableShowPermissionColumnsWithRetry();
+        await administrationUserPage.ensureShowSitesWithAccessGrantedIsSelected();
+        await administrationUserPage.waitForSiteAccessGridToLoad();
+
+        const isStillVisible = await administrationUserPage.isSiteVisibleInGrid(siteName);
+        if (!isStillVisible) {
+          logger.info(`✓ Successfully removed access for site: ${siteName}`);
+          break;
+        }
+
+        if (attempt === MAX_CLEANUP_RETRIES) {
+          logger.warn(`⚠ Site "${siteName}" still visible after ${MAX_CLEANUP_RETRIES} attempts`);
+        } else {
+          logger.warn(`Site "${siteName}" still visible after save, retrying...`);
+        }
+      }
     } catch (error) {
       logger.warn(`Cleanup warning for site ${siteName}: ${error.message}`);
       // Don't throw - cleanup failures shouldn't fail the test
-      // The grantSiteAccessAndSave helper will handle existing access in the next test
+    }
+  };
+
+  /**
+   * Helper: Cleanup group access
+   * Removes group access, saves, then verifies by clicking Edit → Show groups with access granted.
+   * Retries up to 3 times if the group is still visible after save.
+   * @param {string} groupName - Group name to remove access from
+   * @returns {Promise<void>}
+   */
+  const cleanupGroupAccess = async (groupName) => {
+    try {
+      logger.step(`Cleanup - Removing access for group: ${groupName}`);
+
+      for (let attempt = 1; attempt <= MAX_CLEANUP_RETRIES; attempt++) {
+        logger.info(`Cleanup attempt ${attempt}/${MAX_CLEANUP_RETRIES}`);
+
+        // Ensure correct view: show groups with access granted
+        await administrationUserPage.enableShowGroupsWithAccessGranted();
+        await administrationUserPage.waitForGridRows();
+
+        // Check if group is still in the grid before trying to remove it
+        const isGroupVisible = await administrationUserPage.isGroupVisibleInGrid(groupName);
+        if (!isGroupVisible) {
+          logger.info(`✓ Group "${groupName}" not found in grid - already removed`);
+          break;
+        }
+
+        // Right-click → Remove → verify #bd8585 row colour
+        await administrationUserPage.removeAccessForGroup(groupName);
+
+        // Save and wait for success message
+        await administrationUserPage.clickSaveButton();
+        await administrationUserPage.waitForSuccessMessage();
+        logger.info(`✓ Save completed on attempt ${attempt}`);
+
+        // Verify: click Edit, show groups with access granted, then check if group is still present
+        await administrationUserPage.clickEditButton();
+        await administrationUserPage.enableShowGroupsWithAccessGranted();
+        await administrationUserPage.waitForGridRows();
+
+        const isStillVisible = await administrationUserPage.isGroupVisibleInGrid(groupName);
+        if (!isStillVisible) {
+          logger.info(`✓ Successfully removed access for group: ${groupName}`);
+          break;
+        }
+
+        if (attempt === MAX_CLEANUP_RETRIES) {
+          logger.warn(`⚠ Group "${groupName}" still visible after ${MAX_CLEANUP_RETRIES} attempts`);
+        } else {
+          logger.warn(`Group "${groupName}" still visible after save, retrying...`);
+        }
+      }
+    } catch (error) {
+      logger.warn(`Cleanup warning for group ${groupName}: ${error.message}`);
+      // Don't throw - cleanup failures shouldn't fail the test
     }
   };
 
   test('ADMIN-USR-ACC-EXP-01 - Verify the default value of the Access Expiration date when giving permission to a new site', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-01 - Verify the default value of the Access Expiration date when giving permission to a new site');
+    const testName = 'ADMIN-USR-ACC-EXP-01 - Verify the default value of the Access Expiration date when giving permission to a new site';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -166,9 +250,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify expiration date remains Today + 1 Year after 3 permission module changes');
       await administrationUserPage.verifyExpirationDateRemainsAfterModuleChange(siteName, 3);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-01 - Verify the default value of the Access Expiration date when giving permission to a new site', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-01 - Verify the default value of the Access Expiration date when giving permission to a new site', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
       logger.step('Cleanup - Remove access for site');
@@ -177,7 +261,8 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-03  - Verify the lower and upper limit of the Access Expiration date', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-03  - Verify the lower and upper limit of the Access Expiration date');
+    const testName = 'ADMIN-USR-ACC-EXP-03  - Verify the lower and upper limit of the Access Expiration date';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -241,9 +326,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Step 43: Close calendar');
       await administrationUserPage.pressEscape();
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-03  - Verify the lower and upper limit of the Access Expiration date', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-03  - Verify the lower and upper limit of the Access Expiration date', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
       logger.step('Cleanup - Remove access for site');
@@ -252,7 +337,8 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-05 - Verify users can clear the access expiry date', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-05 - Verify users can clear the access expiry date');
+    const testName = 'ADMIN-USR-ACC-EXP-05 - Verify users can clear the access expiry date';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -270,9 +356,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify Access Expiration Date is empty');
       await administrationUserPage.verifyAccessExpirationDateIsEmpty(siteName);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-05 - Verify users can clear the access expiry date', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-05 - Verify users can clear the access expiry date', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
       logger.step('Cleanup - Remove access for site');
@@ -281,7 +367,8 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-06 - Verify Access Status icon color when access expired', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-06 - Verify Access Status icon color when access expired');
+    const testName = 'ADMIN-USR-ACC-EXP-06 - Verify Access Status icon color when access expired';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -326,9 +413,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify Access Status shows "Expired" with red background');
       await administrationUserPage.verifyAccessStatusIsExpired(siteName);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-06 - Verify Access Status icon color when access expired', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-06 - Verify Access Status icon color when access expired', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
       logger.step('Cleanup - Remove access for site');
@@ -337,7 +424,8 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-07 - Verify Access Status icon color when access near expiry', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-07 - Verify Access Status icon color when access near expiry');
+    const testName = 'ADMIN-USR-ACC-EXP-07 - Verify Access Status icon color when access near expiry';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -393,9 +481,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify Access Status shows "Expiring Soon" with orange background');
       await administrationUserPage.verifyAccessStatusIsExpiringSoon(siteName);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-07 - Verify Access Status icon color when access near expiry', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-07 - Verify Access Status icon color when access near expiry', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
       logger.step('Cleanup - Remove access for site');
@@ -404,7 +492,8 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-08 - Verify Access Status icon color when access is valid', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-08 - Verify Access Status icon color when access is valid');
+    const testName = 'ADMIN-USR-ACC-EXP-08 - Verify Access Status icon color when access is valid';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -460,9 +549,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify Access Status shows "Active" with green background');
       await administrationUserPage.verifyAccessStatusIsActiveWithColor(siteName);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-08 - Verify Access Status icon color when access is valid', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-08 - Verify Access Status icon color when access is valid', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
       logger.step('Cleanup - Remove access for site');
@@ -471,7 +560,8 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-09 - Verify Access Status icon when there\'s no expiration date', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-09 - Verify Access Status icon when there\'s no expiration date');
+    const testName = 'ADMIN-USR-ACC-EXP-09 - Verify Access Status icon when there\'s no expiration date';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -519,9 +609,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify Access Status is empty (no status displayed)');
       await administrationUserPage.verifyAccessStatusIsEmpty(siteName);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-09 - Verify Access Status icon when there\'s no expiration date', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-09 - Verify Access Status icon when there\'s no expiration date', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
       logger.step('Cleanup - Remove access for site');
@@ -530,7 +620,8 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-10 - Verify the default state of Show Permission columns checkbox', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-10 - Verify the default state of Show Permission columns checkbox');
+    const testName = 'ADMIN-USR-ACC-EXP-10 - Verify the default state of Show Permission columns checkbox';
+    logger.testStart(testName);
 
     const { userName } = testData.testData.administrationUser;
 
@@ -540,15 +631,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify "Show sites with access granted" is selected by default');
       await administrationUserPage.verifyShowSitesWithAccessSelected();
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-10 - Verify the default state of Show Permission columns checkbox', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-10 - Verify the default state of Show Permission columns checkbox', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-11 - Verify permission grid is collapsible', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-11 - Verify permission grid is collapsible');
+    const testName = 'ADMIN-USR-ACC-EXP-11 - Verify permission grid is collapsible';
+    logger.testStart(testName);
 
     const { userName } = testData.testData.administrationUser;
 
@@ -574,15 +666,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Verify permission columns are collapsed (only 3 core columns visible)');
       await administrationUserPage.verifyPermissionColumnsCollapsed();
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-11 - Verify permission grid is collapsible', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-11 - Verify permission grid is collapsible', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-12 - Verify filtering options in Access Expiration column', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-12 - Verify filtering options in Access Expiration column');
+    const testName = 'ADMIN-USR-ACC-EXP-12 - Verify filtering options in Access Expiration column';
+    logger.testStart(testName);
 
     const { userName, siteNames } = testData.testData.administrationUser;
     const {
@@ -801,15 +894,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Step 45: Click Save button');
       await administrationUserPage.clickSaveButton();
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-12 - Verify filtering options in Access Expiration column', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-12 - Verify filtering options in Access Expiration column', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-13 - Verify user can set an access expiry date for a site that already has permissions', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-13 - Verify user can set an access expiry date for a site that already has permissions');
+    const testName = 'ADMIN-USR-ACC-EXP-13 - Verify user can set an access expiry date for a site that already has permissions';
+    logger.testStart(testName);
 
     const { userName } = testData.testData.administrationUserJeewaka;
 
@@ -905,15 +999,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Step 21: Verify "Successfully saved." message appears');
       await administrationUserPage.verifySaveSuccessMessage();
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-13 - Verify user can set an access expiry date for a site that already has permissions', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-13 - Verify user can set an access expiry date for a site that already has permissions', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-14 - Verify that updates to the access expiry date for a single module in a site are reflected across all modules for that site', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-14 - Verify that updates to the access expiry date for a single module in a site are reflected across all modules for that site');
+    const testName = 'ADMIN-USR-ACC-EXP-14 - Verify that updates to the access expiry date for a single module in a site are reflected across all modules for that site';
+    logger.testStart(testName);
 
     const { userName } = testData.testData.administrationUserJeewaka;
 
@@ -1050,15 +1145,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       await administrationUserPage.verifyAccessExpirationDateExists(blankExpiryDateSite, expectedDate);
       logger.info(`✓ Access Expiration date confirmed as ${expectedDate} for module "${selectedModule}"`);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-14 - Verify that updates to the access expiry date for a single module in a site are reflected across all modules for that site', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-14 - Verify that updates to the access expiry date for a single module in a site are reflected across all modules for that site', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-15 - Verify that clearing the access expiration date for a single module in a site is reflected in all modules for that site', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-15 - Verify that clearing the access expiration date for a single module in a site is reflected in all modules for that site');
+    const testName = 'ADMIN-USR-ACC-EXP-15 - Verify that clearing the access expiration date for a single module in a site is reflected in all modules for that site';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUser;
 
@@ -1169,15 +1265,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       logger.step('Step 29: Cleanup completed');
       logger.info('✓ Cleanup completed successfully');
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-15 - Verify that clearing the access expiration date for a single module in a site is reflected in all modules for that site', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-15 - Verify that clearing the access expiration date for a single module in a site is reflected in all modules for that site', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-16 - Verify behavior when a user (with access to multiple sites) has access expired for a single site and module', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-16 - Verify behavior when a user (with access to multiple sites) has access expired for a single site and module');
+    const testName = 'ADMIN-USR-ACC-EXP-16 - Verify behavior when a user (with access to multiple sites) has access expired for a single site and module';
+    logger.testStart(testName);
 
     const { userName, site1, site2 } = testData.testData.administrationUserTest16;
     const expectedSites = [site1, site2];
@@ -1300,15 +1397,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       await administrationUserPage.waitForSuccessMessage();
       logger.info('✓ Cleanup completed - expiry date removed');
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-16 - Verify behavior when a user (with access to multiple sites) has access expired for a single site and module', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-16 - Verify behavior when a user (with access to multiple sites) has access expired for a single site and module', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-17 - Verify behavior when a user (with access to a single site) has access expired for that site across all modules', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-17 - Verify behavior when a user (with access to a single site) has access expired for that site across all modules');
+    const testName = 'ADMIN-USR-ACC-EXP-17 - Verify behavior when a user (with access to a single site) has access expired for that site across all modules';
+    logger.testStart(testName);
 
     const { userName, siteName } = testData.testData.administrationUserTest17;
     const expectedErrorMessage = "User's configuration is not setup. Please contact SCSeTools administrators";
@@ -1385,8 +1483,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
 
       logger.step('Step 16: Attempt to login as pwuser17 (expect error due to expired access)');
       const loginPage = testSetup.getLoginPage();
-      await loginPage.enterUsername('pwuser17');
-      await loginPage.enterPassword('Testing.123');
+      const pwuser17Creds = credentials.getUserCredentials('pwuser17');
+      await loginPage.enterUsername(pwuser17Creds.username);
+      await loginPage.enterPassword(pwuser17Creds.password);
 
       await loginPage.clickLoginButton();
       logger.info('✓ Login button clicked');
@@ -1430,15 +1529,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       await administrationUserPage.waitForSuccessMessage();
       logger.info('✓ Cleanup completed - expiry date removed');
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-17 - Verify behavior when a user (with access to a single site) has access expired for that site across all modules', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-17 - Verify behavior when a user (with access to a single site) has access expired for that site across all modules', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-26 - Verify File Options content in eTools access expiry notification', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-26 - Verify File Options content in eTools access expiry notification');
+    const testName = 'ADMIN-USR-ACC-EXP-26 - Verify File Options content in eTools access expiry notification';
+    logger.testStart(testName);
 
     try {
       await testSetup.loginAsValidUser();
@@ -1467,15 +1567,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       await administrationUserPage.validateNotificationContent(siteName);
       logger.info('✓ Notification content validated successfully');
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-26 - Verify File Options content in eTools access expiry notification', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-26 - Verify File Options content in eTools access expiry notification', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-32 - Verify user access expiry data is displayed in the DS Site Status dashboard', async ({ page }) => {
-    logger.testStart('ADMIN-USR-ACC-EXP-32 - Verify user access expiry data is displayed in the DS Site Status dashboard');
+    const testName = 'ADMIN-USR-ACC-EXP-32 - Verify user access expiry data is displayed in the DS Site Status dashboard';
+    logger.testStart(testName);
 
     const {
       siteNameForAccessExpiration, userFirstNameForAccessExpiration, accessExpirationDatePattern, contactIconClass,
@@ -1502,7 +1603,7 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       try {
         await page.waitForLoadState('networkidle', { timeout: 10000 });
       } catch (error) {
-        logger.warn('Network idle state not reached within timeout, continuing test');
+        logger.warn(`Network idle state not reached within timeout: ${error.message}`);
       }
       await page.waitForTimeout(WAIT_TIMES.GRID_STABILIZATION);
       logger.info('✓ Popup data loaded');
@@ -1519,15 +1620,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       const accessExpirationDate = await siteStatusDashboardPage.verifyUserAccessExpirationDate(userFirstNameForAccessExpiration, accessExpirationDatePattern);
       logger.info(`✓ User "${userFirstNameForAccessExpiration}" has Access Expiration date: ${accessExpirationDate}`);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-32 - Verify user access expiry data is displayed in the DS Site Status dashboard', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-32 - Verify user access expiry data is displayed in the DS Site Status dashboard', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-33 - Verify user access expiry data is displayed in the GW Site Status dashboard', async ({ page }) => {
-    logger.testStart('ADMIN-USR-ACC-EXP-33 - Verify user access expiry data is displayed in the GW Site Status dashboard');
+    const testName = 'ADMIN-USR-ACC-EXP-33 - Verify user access expiry data is displayed in the GW Site Status dashboard';
+    logger.testStart(testName);
 
     const {
       userFirstNameForAccessExpiration, accessExpirationDatePattern, contactIconClass,
@@ -1548,7 +1650,7 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
         await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
         await page.waitForLoadState('networkidle', { timeout: 10000 });
       } catch (error) {
-        logger.warn('Load state conditions not fully met, continuing test');
+        logger.warn(`Load state conditions not fully met: ${error.message}`);
       }
       await page.waitForTimeout(WAIT_TIMES.PERMISSION_RENDER * 2);
       logger.info('✓ Groundwater dashboard loaded');
@@ -1569,7 +1671,7 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       try {
         await page.waitForLoadState('networkidle', { timeout: 10000 });
       } catch (error) {
-        logger.warn('Network idle state not reached within timeout, continuing test');
+        logger.warn(`Network idle state not reached within timeout: ${error.message}`);
       }
       await page.waitForTimeout(WAIT_TIMES.GRID_STABILIZATION);
       logger.info('✓ Popup data loaded');
@@ -1586,15 +1688,16 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       const accessExpirationDate = await siteStatusDashboardPage.verifyUserAccessExpirationDate(userFirstNameForAccessExpiration, accessExpirationDatePattern);
       logger.info(`✓ User "${userFirstNameForAccessExpiration}" has Access Expiration date: ${accessExpirationDate}`);
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-33 - Verify user access expiry data is displayed in the GW Site Status dashboard', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-33 - Verify user access expiry data is displayed in the GW Site Status dashboard', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
 
   test('ADMIN-USR-ACC-EXP-34 - Verify User Status Admin report UI', async () => {
-    logger.testStart('ADMIN-USR-ACC-EXP-34 - Verify User Status Admin report UI');
+    const testName = 'ADMIN-USR-ACC-EXP-34 - Verify User Status Admin report UI';
+    logger.testStart(testName);
 
     const { siteName } = testData.testData.administrationUserTest34;
     const loginPage = testSetup.getLoginPage();
@@ -1639,9 +1742,9 @@ test.describe('Admin User Mgmt Site Access Expiration Date', () => {
       await administrationUserPage.verifyDateFormatMatches(accessExpirationDate);
       logger.info('✓ Access Expiration date format matches other date columns');
 
-      logger.testEnd('ADMIN-USR-ACC-EXP-34 - Verify User Status Admin report UI', 'PASSED');
+      logger.testEnd(testName, 'PASSED');
     } catch (error) {
-      logger.testEnd('ADMIN-USR-ACC-EXP-34 - Verify User Status Admin report UI', 'FAILED');
+      logger.testEnd(testName, 'FAILED');
       throw error;
     }
   });
