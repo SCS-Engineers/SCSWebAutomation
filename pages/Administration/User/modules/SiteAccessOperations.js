@@ -77,12 +77,17 @@ class SiteAccessOperations {
         await siteRow.waitFor({ state: 'visible', timeout: 5000 });
 
         // Click to select the row (it will turn orange/yellow)
+        // Use evaluate to bypass mdl-cell div intercepting pointer events
         const siteCell = siteRow.locator('td').first();
-        await siteCell.click();
+        await siteCell.evaluate((el) => el.click());
         this.logger.info('✓ Row selected (highlighted)');
 
         // Right-click on the row to open context menu
-        await siteRow.click({ button: 'right' });
+        await siteRow.evaluate((el) => {
+          el.dispatchEvent(new MouseEvent('contextmenu', {
+            bubbles: true, cancelable: true, view: window,
+          }));
+        });
         this.logger.info('✓ Context menu opened');
 
         // Click Remove option

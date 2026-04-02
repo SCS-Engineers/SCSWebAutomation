@@ -12,3 +12,7 @@ latest-fail.png
 screenshot-debug.png
 temp_passed_test.json
 test-results.json/
+
+# Temp/debug files
+*.bak
+exp*_*.txt

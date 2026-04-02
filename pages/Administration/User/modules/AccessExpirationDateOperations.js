@@ -633,6 +633,210 @@ class AccessExpirationDateOperations extends BasePage {
       throw error;
     }
   }
+
+  /**
+   * Verify the Access Expiration Date field is disabled (not editable) for a site.
+   * Attempts a double-click on the cell and checks that no datepicker input appears.
+   * @param {string} siteName - Site name to verify
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationFieldDisabled(siteName) {
+    this.logger.action(
+      `Verifying Access Expiration field is disabled for: ${siteName}`,
+    );
+
+    const allGrids = this.page.locator('.e-grid');
+    const gridCount = await allGrids.count();
+    let expirationColumnIndex = -1;
+    let correctGridIndex = -1;
+
+    for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
+      const grid = allGrids.nth(gridIndex);
+      const headers = grid.locator('.e-gridheader .e-headercell');
+      const headerCount = await headers.count();
+
+      let hasAccessStatus = false;
+      let hasAccessExpiration = false;
+      let tempIndex = -1;
+      let visibleColumnIndex = 0;
+
+      for (let i = 0; i < headerCount; i++) {
+        const header = headers.nth(i);
+        const headerText = await header.textContent();
+        const headerClass =
+          await header.getAttribute('class').catch(() => '');
+
+        if (headerClass && headerClass.includes('e-hide')) {
+          continue;
+        }
+
+        if (headerText && headerText.includes('Access Status')) {
+          hasAccessStatus = true;
+        }
+        if (
+          headerText
+          && (headerText.includes('Access Expiration Date')
+            || headerText.includes('Access Expiration'))
+        ) {
+          hasAccessExpiration = true;
+          tempIndex = visibleColumnIndex;
+        }
+
+        visibleColumnIndex++;
+      }
+
+      if (hasAccessStatus && hasAccessExpiration) {
+        expirationColumnIndex = tempIndex;
+        correctGridIndex = gridIndex;
+        break;
+      }
+    }
+
+    if (expirationColumnIndex === -1 || correctGridIndex === -1) {
+      throw new Error('Site Access grid not found');
+    }
+
+    const correctGrid = allGrids.nth(correctGridIndex);
+    const siteRow = correctGrid.locator('.e-row')
+      .filter({hasText: siteName}).first();
+    await siteRow.waitFor({state: 'visible', timeout: 10000});
+
+    const expirationCell =
+      siteRow.locator('td:not(.e-hide)').nth(expirationColumnIndex);
+    await expirationCell.dblclick();
+    await this.page.waitForTimeout(1000);
+
+    const dateInput = this.page
+      .locator('.e-input-group input.e-input, input[role="combobox"]')
+      .first();
+    const isInputVisible =
+      await dateInput.isVisible().catch(() => false);
+
+    if (isInputVisible) {
+      await this.page.keyboard.press('Escape');
+      throw new Error(
+        `Access Expiration field is editable for "${siteName}" — expected disabled`,
+      );
+    }
+
+    this.logger.info(
+      `✓ Access Expiration field is disabled for "${siteName}"`,
+    );
+  }
+
+  /**
+   * Verify the Access Expiration Date field is editable for a site.
+   * Double-clicks on the cell and verifies a datepicker input appears.
+   * @param {string} siteName - Site name to verify
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationFieldEditable(siteName) {
+    this.logger.action(
+      `Verifying Access Expiration field is editable for: ${siteName}`,
+    );
+
+    await this.editAccessExpirationDateCell(siteName);
+
+    // If editAccessExpirationDateCell succeeds, the field is editable
+    // Close the edit mode
+    await this.page.keyboard.press('Escape');
+    await this.page.waitForTimeout(500);
+
+    this.logger.info(
+      `✓ Access Expiration field is editable for "${siteName}"`,
+    );
+  }
+
+  /**
+   * Double-click the Access Expiration Date cell and verify that
+   * the "SCSeTools Customer Support" toast appears with the message
+   * indicating the field cannot be edited because the site is
+   * associated with a group.
+   * @param {string} siteName - Site name to attempt editing
+   * @returns {Promise<void>}
+   */
+  async verifyExpirationEditBlockedByGroupMessage(siteName) {
+    this.logger.action(
+      `Attempting to edit Access Expiration for "${siteName}" `
+      + '— expecting blocked-by-group toast',
+    );
+
+    // Find the correct grid with Access Expiration column
+    const allGrids = this.page.locator('.e-grid');
+    const gridCount = await allGrids.count();
+    let expirationColumnIndex = -1;
+    let correctGridIndex = -1;
+
+    for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
+      const grid = allGrids.nth(gridIndex);
+      const headers = grid.locator('.e-gridheader .e-headercell');
+      const headerCount = await headers.count();
+
+      let hasAccessStatus = false;
+      let hasAccessExpiration = false;
+      let tempIndex = -1;
+      let visibleColumnIndex = 0;
+
+      for (let i = 0; i < headerCount; i++) {
+        const header = headers.nth(i);
+        const headerText = await header.textContent();
+        const headerClass =
+          await header.getAttribute('class').catch(() => '');
+
+        if (headerClass && headerClass.includes('e-hide')) {
+          continue;
+        }
+
+        if (headerText && headerText.includes('Access Status')) {
+          hasAccessStatus = true;
+        }
+        if (
+          headerText
+          && (headerText.includes('Access Expiration Date')
+            || headerText.includes('Access Expiration'))
+        ) {
+          hasAccessExpiration = true;
+          tempIndex = visibleColumnIndex;
+        }
+
+        visibleColumnIndex++;
+      }
+
+      if (hasAccessStatus && hasAccessExpiration) {
+        expirationColumnIndex = tempIndex;
+        correctGridIndex = gridIndex;
+        break;
+      }
+    }
+
+    if (expirationColumnIndex === -1 || correctGridIndex === -1) {
+      throw new Error('Site Access grid not found');
+    }
+
+    const correctGrid = allGrids.nth(correctGridIndex);
+    const siteRow = correctGrid.locator('.e-row')
+      .filter({ hasText: siteName }).first();
+    await siteRow.waitFor({ state: 'visible', timeout: 10000 });
+
+    const expirationCell =
+      siteRow.locator('td:not(.e-hide)').nth(expirationColumnIndex);
+    await expirationCell.dblclick();
+
+    // Wait for the "SCSeTools Customer Support" toast
+    const expectedMessage = 'Access Expiration Date is not allowed to '
+      + 'edit because this site is associated with a group(s).';
+    const toast = this.page.locator('.e-toast, .toast-message, [role="alert"]')
+      .filter({ hasText: expectedMessage }).first();
+    await toast.waitFor({ state: 'visible', timeout: 15000 });
+
+    this.logger.info(
+      `✓ Toast displayed: "${expectedMessage}"`,
+    );
+
+    // Wait for the toast to disappear before returning
+    await toast.waitFor({ state: 'hidden', timeout: 15000 });
+    this.logger.info('✓ Blocked-by-group toast dismissed');
+  }
 }
 
 module.exports = AccessExpirationDateOperations;

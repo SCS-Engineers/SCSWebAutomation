@@ -207,6 +207,67 @@
       "user3": "PW Automation FBSA User3",
       "groupName": "PW Automation GL1",
       "contextMenuItem": "Edit Exp. Dates"
+    },
+    "groupLevelAccess43": {
+      "userName": "PW Automation U1",
+      "siteName": "PW Automation FBSA S6",
+      "groupName": "PW Automation GL1",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Granting access to the selected groups will clear the existing expiry dates for the associated sites. Do you want to proceed?",
+      "successMessage": "Successfully saved"
+    },
+    "groupLevelAccess44": {
+      "userName": "PW Automation U1",
+      "groupName": "PW Automation GL1",
+      "successMessage": "Successfully saved"
+    },
+    "groupLevelAccess48": {
+      "userName": "PW GL User1",
+      "siteName": "PW GL Site1",
+      "groupName": "PW Automation GL1",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Changing the group will clear the existing expiry dates of all associated users who have Group Level access for this site. Do you want to proceed?",
+      "successMessage": "Successfully saved.",
+      "siteGroups": {
+        "newRegion": "PW Automation GL1",
+        "newScsOffice": "PW Automation GL2",
+        "newClient": "PW Automation GL3",
+        "originalRegion": "playwright GL1",
+        "originalScsOffice": "playwright GL2",
+        "originalClient": "playwright GL3"
+      }
+    },
+    "groupLevelAccess49": {
+      "userName": "PW GL User1",
+      "siteName": "PW GL Site1",
+      "groupName": "PW Automation GL1",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Changing the group will clear the existing expiry dates of all associated users who have Group Level access for this site. Do you want to proceed?",
+      "successMessage": "Successfully saved.",
+      "siteGroups": {
+        "newRegion": "PW Automation GL1",
+        "newScsOffice": "PW Automation GL2",
+        "newClient": "PW Automation GL3",
+        "originalRegion": "playwright GL1",
+        "originalScsOffice": "playwright GL2",
+        "originalClient": "playwright GL3"
+      }
+    },
+    "groupLevelAccess50": {
+      "userName": "PW GL User1",
+      "siteName": "PW GL Site1",
+      "groupName": "PW Automation GL1",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Changing the group will clear the existing expiry dates of all associated users who have Group Level access for this site. Do you want to proceed?",
+      "successMessage": "Successfully saved.",
+      "siteGroups": {
+        "newRegion": "PW Automation GL1",
+        "newScsOffice": "PW Automation GL2",
+        "newClient": "PW Automation GL3",
+        "originalRegion": "playwright GL1",
+        "originalScsOffice": "playwright GL2",
+        "originalClient": "playwright GL3"
+      }
     }
   }
 }
