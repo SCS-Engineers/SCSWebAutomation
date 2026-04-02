@@ -1921,6 +1921,22 @@ class UserFilterOperations extends BasePage {
   }
 
   /**
+   * Click NO on the confirmation popup
+   * @returns {Promise<void>}
+   */
+  async clickNoOnConfirmation() {
+    this.logger.action('Clicking No on confirmation popup');
+
+    const noButton = this.page
+      .getByRole('button', {name: 'No'}).first();
+    await noButton.waitFor({state: 'visible', timeout: 10000});
+    await noButton.click();
+    await this.page.waitForTimeout(1000);
+
+    this.logger.info('✓ Clicked No on confirmation');
+  }
+
+  /**
    * Verify the success toast/message is displayed
    * @param {string} expectedMessage - Expected success message text
    * @returns {Promise<void>}

@@ -921,6 +921,22 @@ class AdministrationUserPage extends BasePage {
   }
 
   /**
+   * Verify Access Status is not empty (has any value)
+   * @param {string} siteName - Site name to verify
+   * @returns {Promise<string>} The non-empty Access Status value
+   */
+  async verifyAccessStatusIsNotEmpty(siteName) {
+    const status = await this.getAccessStatus(siteName);
+    if (!status || status.trim() === '') {
+      throw new Error(
+        `Access Status is empty for "${siteName}" — expected a value`,
+      );
+    }
+    this.logger.info(`✓ Access Status is not empty: ${status}`);
+    return status;
+  }
+
+  /**
    * Get visible column headers from Site Access grid
    * @returns {Promise<string[]>}
    */
@@ -1136,6 +1152,24 @@ class AdministrationUserPage extends BasePage {
   }
 
   /**
+   * Verify that Access Expiration Date is not empty for a site
+   * @param {string} siteName - Site name to verify
+   * @returns {Promise<string>} The non-empty expiration date value
+   */
+  async verifyAccessExpirationDateIsNotEmpty(siteName) {
+    const date = await this.getAccessExpirationDate(siteName);
+    if (!date || date.trim() === '') {
+      throw new Error(
+        `Access Expiration is empty for "${siteName}" — expected a date`,
+      );
+    }
+    this.logger.info(
+      `✓ Access Expiration is not empty: ${date}`,
+    );
+    return date;
+  }
+
+  /**
    * Open expiration date calendar by clicking calendar icon
    * @returns {Promise<void>}
    */
@@ -1311,6 +1345,35 @@ class AdministrationUserPage extends BasePage {
    */
   async verifyAccessExpirationDateExists(siteName, expectedDate) {
     return this.expirationDateOps.verifyAccessExpirationDateExists(siteName, expectedDate);
+  }
+
+  /**
+   * Verify Access Expiration Date field is disabled (not editable) for a site
+   * @param {string} siteName - Site name to verify
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationFieldDisabled(siteName) {
+    return this.expirationDateOps.verifyAccessExpirationFieldDisabled(siteName);
+  }
+
+  /**
+   * Verify Access Expiration Date field is editable for a site
+   * @param {string} siteName - Site name to verify
+   * @returns {Promise<void>}
+   */
+  async verifyAccessExpirationFieldEditable(siteName) {
+    return this.expirationDateOps.verifyAccessExpirationFieldEditable(siteName);
+  }
+
+  /**
+   * Double-click Access Expiration Date cell and verify the
+   * "not allowed to edit" toast appears because site is in a group
+   * @param {string} siteName - Site name to attempt editing
+   * @returns {Promise<void>}
+   */
+  async verifyExpirationEditBlockedByGroupMessage(siteName) {
+    return this.expirationDateOps
+      .verifyExpirationEditBlockedByGroupMessage(siteName);
   }
 
   /**
@@ -2074,6 +2137,21 @@ class AdministrationUserPage extends BasePage {
   }
 
   /**
+   * Verify a site row is visible in the active grid (throws if not)
+   * @param {string} siteName - Site name to verify
+   * @returns {Promise<void>}
+   */
+  async verifySiteIsVisibleInGrid(siteName) {
+    const isVisible = await this.isSiteVisibleInGrid(siteName);
+    if (!isVisible) {
+      throw new Error(
+        `Site "${siteName}" is not visible in the access grid`,
+      );
+    }
+    this.logger.info(`✓ Site "${siteName}" is visible in access grid`);
+  }
+
+  /**
    * Check whether a group row is currently visible in the active grid
    * @param {string} groupName - Group name to look for
    * @returns {Promise<boolean>}
@@ -2089,6 +2167,95 @@ class AdministrationUserPage extends BasePage {
    */
   async openGroupAccessPermissions() {
     return this.navigation.openGroupAccessPermissions();
+  }
+
+  // ─── Site List Navigation & Editing ─────────────────────────────
+
+  /**
+   * Navigate to Sites → List in the Administration section
+   * @returns {Promise<void>}
+   */
+  async navigateToSitesList() {
+    return this.navigation.navigateToSitesList();
+  }
+
+  /**
+   * Click the "List" button under the Sites toolbar
+   * @returns {Promise<void>}
+   */
+  async clickSiteListButton() {
+    return this.navigation.clickSiteListButton();
+  }
+
+  /**
+   * Filter the Site List grid by Site Name
+   * @param {string} siteName - Site name to filter by
+   * @returns {Promise<void>}
+   */
+  async filterSiteGridByName(siteName) {
+    return this.navigation.filterSiteGridByName(siteName);
+  }
+
+  /**
+   * Click the Edit button on a site row in the Site List grid
+   * @returns {Promise<void>}
+   */
+  async clickSiteRowEditButton() {
+    return this.navigation.clickSiteRowEditButton();
+  }
+
+  /**
+   * Change a site group dropdown value (e.g., Region, SCS Office, Client)
+   * @param {string} label - Dropdown label text
+   * @param {string} value - Value to select
+   * @returns {Promise<void>}
+   */
+  async changeSiteGroupDropdown(label, value) {
+    return this.navigation.changeSiteGroupDropdown(label, value);
+  }
+
+  /**
+   * Click the Save button on the site edit form
+   * @returns {Promise<void>}
+   */
+  async clickSiteSaveButton() {
+    return this.navigation.clickSiteSaveButton();
+  }
+
+  /**
+   * Verify the Save button is still visible (e.g., after clicking No)
+   * @returns {Promise<void>}
+   */
+  async verifySaveButtonIsVisible() {
+    return this.navigation.verifySaveButtonIsVisible();
+  }
+
+  /**
+   * Verify the title of the currently visible confirmation popup
+   * @param {string} expectedTitle - Expected popup title text
+   * @returns {Promise<void>}
+   */
+  async verifyConfirmationPopupTitle(expectedTitle) {
+    return this.navigation.verifyConfirmationPopupTitle(expectedTitle);
+  }
+
+  /**
+   * Wait for the site success message to appear
+   * @param {string} expectedMessage - Expected success message text
+   * @returns {Promise<void>}
+   */
+  async waitForSiteSuccessMessage(expectedMessage) {
+    return this.navigation.waitForSiteSuccessMessage(expectedMessage);
+  }
+
+  /**
+   * Save site changes and verify no confirmation popup appears.
+   * @param {string} expectedMessage - Expected success toast text
+   * @returns {Promise<void>}
+   */
+  async saveSiteAndVerifyNoConfirmationPopup(expectedMessage) {
+    return this.navigation
+      .saveSiteAndVerifyNoConfirmationPopup(expectedMessage);
   }
 
   /**
@@ -2679,6 +2846,14 @@ class AdministrationUserPage extends BasePage {
    */
   async clickYesOnConfirmation() {
     return this.filterOps.clickYesOnConfirmation();
+  }
+
+  /**
+   * Click NO on confirmation popup
+   * @returns {Promise<void>}
+   */
+  async clickNoOnConfirmation() {
+    return this.filterOps.clickNoOnConfirmation();
   }
 
   /**

@@ -112,13 +112,18 @@ class GroupAccessOperations extends BasePage {
       await groupRow.waitFor({ state: 'visible', timeout: 5000 });
 
       // Click to select the row (it will turn orange/yellow)
+      // Use evaluate to bypass mdl-cell div intercepting pointer events
       const groupCell = groupRow.locator('td').first();
-      await groupCell.click();
+      await groupCell.evaluate((el) => el.click());
       await this.page.waitForTimeout(500);
       this.logger.info('✓ Row selected (highlighted)');
 
       // Right-click on the row to open context menu
-      await groupRow.click({ button: 'right' });
+      await groupRow.evaluate((el) => {
+        el.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true, view: window,
+        }));
+      });
       await this.page.waitForTimeout(500);
       this.logger.info('✓ Context menu opened');
 

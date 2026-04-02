@@ -1,6 +1,7 @@
 const { test } = require('@playwright/test');
 const TestSetup = require('../../../utils/testSetup');
 const logger = require('../../../utils/logger');
+const AdminUserTestHelpers = require('../../../utils/adminUserTestHelpers');
 const testData = require('../../../data/testData.json');
 
 /**
@@ -17,6 +18,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
 
   let testSetup;
   let administrationUserPage;
+  let helpers;
 
   test.beforeEach(async ({ page }) => {
     logger.divider();
@@ -25,39 +27,11 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     testSetup = new TestSetup();
     await testSetup.initialize(page);
     administrationUserPage = testSetup.getAdministrationUserPage();
+    helpers = new AdminUserTestHelpers(testSetup, administrationUserPage);
 
     logger.info('Test setup completed');
     logger.divider();
   });
-
-  /**
-   * Helper: Navigate to Administration → Users → List and wait for the grid to be ready
-   * @returns {Promise<void>}
-   */
-  const navigateToUsersList = async () => {
-    await testSetup.loginAsValidUser();
-    await administrationUserPage.waitForDOMContentLoaded();
-    await testSetup.acknowledgeHealthAndSafety();
-
-    logger.step('Step 1: Navigate to ADMINISTRATION tab');
-    await administrationUserPage.navigateToAdministrationTab();
-    await administrationUserPage.waitForPageReady();
-    logger.info('✓ Page is ready after navigating to ADMINISTRATION tab');
-
-    logger.step('Step 2: Verify page contains SITE LIST');
-    await administrationUserPage.verifySiteListVisible();
-
-    logger.step('Step 3: Navigate to Users → List');
-    await administrationUserPage.navigateToUsersList();
-
-    logger.step('Step 4: Wait for user grid data to load');
-    await administrationUserPage.waitForUserGridToLoad();
-    logger.info('✓ User grid loaded');
-
-    logger.step('Step 4a: Wait for grid filter to be ready');
-    await administrationUserPage.waitForUserGridFilterReady();
-    logger.info('✓ Grid filter is ready');
-  };
 
   /**
    * Helper: Select a site from the SCS DATASERVICES site dropdown and wait for grid to stabilize
@@ -402,7 +376,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     const { siteDropdownId, siteName, firstNamesCount } = testData.testData.filterBySiteAssignment;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step(`Step 5: Capture first ${firstNamesCount} first names before applying site filter`);
       const capturedFirstNames = await administrationUserPage.getFirstNamesFromUserGrid(firstNamesCount);
@@ -428,7 +402,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     const { siteDropdownId, siteName, firstNamesCount, assignedUsers } = testData.testData.filterBySiteAssignment;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       // Ensure both assigned users have site access before the test
       logger.step(`Setup: Grant site access to "${siteName}" for "${assignedUsers[0]}"`);
@@ -480,7 +454,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
       testData.testData.filterBySiteAssignment03;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       // ── PART 1: Verify direct site-level access filtering ──
 
@@ -548,7 +522,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = testData.testData.filterBySiteAssignment04;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step(`Step 5: Select site "${site1}" from dropdown`);
       await selectSiteFilter(siteDropdownId, site1);
@@ -593,7 +567,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
       testData.testData.filterBySiteAssignment05;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step(`Step 5: Grant site access to "${siteName}" for "${userName}"`);
       await grantSiteAccess(userName, siteName);
@@ -636,7 +610,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
       testData.testData.filterBySiteAssignment06;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step(`Step 5: Grant site access to "${siteName}" for "${userName}"`);
       await grantSiteAccess(userName, siteName);
@@ -682,7 +656,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
       testData.testData.filterBySiteAssignment07;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step(`Step 5: Select site "${siteName}" from dropdown`);
       await selectSiteFilter(siteDropdownId, siteName);
@@ -720,7 +694,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
       testData.testData.filterBySiteAssignment08;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step(`Step 5: Select site "${siteName}" from dropdown`);
       await selectSiteFilter(siteDropdownId, siteName);
@@ -775,7 +749,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
       testData.testData.filterBySiteAssignment09;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step(`Step 5: Grant site access to "${siteName}" for "${userName}"`);
       await grantSiteAccess(userName, siteName);
@@ -920,7 +894,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step('Step 5: Setup — grant access and clear expiry dates');
       await setupUsersForExpDateTests(data, true);
@@ -1000,7 +974,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step('Step 5: Setup — grant access and clear expiry dates');
       await setupUsersForExpDateTests(data, true);
@@ -1073,7 +1047,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step('Step 5: Setup — grant access WITHOUT clearing expiry dates');
       await setupUsersForExpDateTests(data, false);
@@ -1142,7 +1116,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       logger.step('Step 5: Setup — grant access WITHOUT clearing expiry dates');
       await setupUsersForExpDateTests(data, false);
@@ -1209,7 +1183,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       // ── Setup: Grant site access and clear expiry date ──
       logger.step(`Step 5: Grant site access to "${siteName}" for "${user1}"`);
@@ -1285,7 +1259,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       // ── Setup: Grant site access — keep expiry date ──
       logger.step(`Step 5: Grant site access to "${siteName}" for "${user1}"`);
@@ -1356,7 +1330,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     const {siteDropdownId, siteName, user1, user3, groupName} = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       // ── Setup: Grant site access to user1 ──
       logger.step(`Step 5: Grant site access to "${siteName}" for "${user1}"`);
@@ -1435,7 +1409,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     const {siteDropdownId, siteName, user1, user3, groupName} = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       // ── Setup: Grant site access to user1 ──
       logger.step(`Step 5: Grant site access to "${siteName}" for "${user1}"`);
@@ -1517,7 +1491,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
     } = data;
 
     try {
-      await navigateToUsersList();
+      await helpers.navigateToUsersList();
 
       // ── Setup: Grant site access to user1 ──
       logger.step(`Step 5: Grant site access to "${siteName}" for "${user1}"`);

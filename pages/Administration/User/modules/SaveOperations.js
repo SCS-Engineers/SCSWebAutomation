@@ -25,8 +25,8 @@ class SaveOperations extends BasePage {
    */
   async waitForSuccessMessage(timeout = 30000) {
     this.logger.info('Waiting for success message');
-    await this.page.locator('text=Successfully saved').waitFor({ state: 'visible', timeout });
-    await this.page.locator('text=Successfully saved').waitFor({ state: 'hidden', timeout });
+    await this.page.locator('text=Successfully saved').first().waitFor({ state: 'visible', timeout });
+    await this.page.locator('text=Successfully saved').first().waitFor({ state: 'hidden', timeout });
     this.logger.info('✓ Success message appeared and disappeared');
   }
 
