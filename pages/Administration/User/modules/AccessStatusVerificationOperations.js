@@ -1,8 +1,61 @@
 const logger = require('../../../../utils/logger');
 
+/** RGB color values for green Access Status backgrounds */
+const GREEN_COLORS = [
+  'rgb(0, 128, 0)', 'rgb(40, 167, 69)', 'rgb(76, 175, 80)',
+  'rgb(46, 125, 50)', 'rgb(67, 160, 71)', 'rgb(56, 142, 60)',
+  'rgb(34, 139, 34)', 'rgb(0, 150, 0)',
+];
+const GREEN_PATTERNS = [
+  /rgb\([0-9]{1,2},\s*1[2-6][0-9],\s*[0-9]{1,2}\)/,
+  /rgb\([3-7][0-9],\s*1[4-7][0-9],\s*[5-8][0-9]\)/,
+];
+
+/** RGB color values for red Access Status backgrounds */
+const RED_COLORS = [
+  'rgb(255, 0, 0)', 'rgb(220, 53, 69)', 'rgb(255, 99, 71)',
+  'rgb(244, 67, 54)', 'rgb(213, 0, 0)', 'rgb(198, 40, 40)',
+];
+const RED_PATTERNS = [
+  /rgb\(2[2-5][0-9],\s*[0-9]{1,2},\s*[0-9]{1,2}\)/,
+];
+
+/** RGB color values for orange Access Status backgrounds */
+const ORANGE_COLORS = [
+  'rgb(255, 165, 0)', 'rgb(255, 140, 0)', 'rgb(255, 152, 0)',
+  'rgb(243, 156, 18)', 'rgb(230, 126, 34)', 'rgb(235, 115, 0)',
+  'rgb(251, 140, 0)',
+];
+const ORANGE_PATTERNS = [
+  /rgb\(2[3-5][0-9],\s*1[0-6][0-9],\s*[0-4][0-9]\)/,
+];
+
+/** RGB color values for light/white text */
+const LIGHT_COLORS = [
+  'rgb(255, 255, 255)', 'rgb(248, 249, 250)', 'white',
+];
+const LIGHT_PATTERNS = [
+  /rgb\(2[4-5][0-9],\s*2[4-5][0-9],\s*2[4-5][0-9]\)/,
+];
+
+/**
+ * Check if a color string matches any of the given values or patterns
+ * @param {string} color - CSS color string to test
+ * @param {string[]} colorValues - Exact color strings to match
+ * @param {RegExp[]} patterns - Regex patterns to test
+ * @returns {boolean}
+ */
+const isColorMatch = (color, colorValues, patterns = []) => {
+  if (colorValues.some((c) => color.includes(c))) {
+    return true;
+  }
+  return patterns.some((p) => p.test(color));
+};
+
 /**
  * Access Status Verification Operations Module
- * Handles all access status verification operations including color validation
+ * Handles all access status verification operations
+ * including color validation
  */
 class AccessStatusVerificationOperations {
   constructor(page) {
@@ -11,9 +64,192 @@ class AccessStatusVerificationOperations {
   }
 
   /**
+   * Find the Access Status cell for a given site in the grid
+   * @param {string} siteName - Site name to locate
+   * @returns {Promise<import('@playwright/test').Locator>}
+   */
+  async findAccessStatusCell(siteName) {
+    const allGrids = this.page.locator('.e-grid');
+    const gridCount = await allGrids.count();
+
+    for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
+      const grid = allGrids.nth(gridIndex);
+      const headers = grid.locator('.e-gridheader .e-headercell');
+      const headerCount = await headers.count();
+
+      // Find the Access Status column index
+      let statusColumnIndex = -1;
+      for (let i = 0; i < headerCount; i++) {
+        const headerText = await headers.nth(i).textContent();
+        if (headerText?.includes('Access Status')) {
+          statusColumnIndex = i;
+          break;
+        }
+      }
+
+      if (statusColumnIndex === -1) {
+        continue;
+      }
+
+      // Find the row containing the site name
+      const rows = grid.locator('.e-row');
+      const rowCount = await rows.count();
+
+      for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+        const row = rows.nth(rowIndex);
+        const cells = row.locator('td');
+        const cellCount = await cells.count();
+
+        const isSiteRow = await this.rowContainsSite(
+          cells, cellCount, siteName,
+        );
+
+        if (isSiteRow && statusColumnIndex < cellCount) {
+          return cells.nth(statusColumnIndex);
+        }
+      }
+    }
+
+    throw new Error(
+      `Could not find Access Status cell for site: ${siteName}`,
+    );
+  }
+
+  /**
+   * Check if a grid row contains the given site name
+   * @param {import('@playwright/test').Locator} cells - Row cells
+   * @param {number} cellCount - Number of cells in the row
+   * @param {string} siteName - Site name to search for
+   * @returns {Promise<boolean>}
+   */
+  async rowContainsSite(cells, cellCount, siteName) {
+    for (let i = 0; i < cellCount; i++) {
+      const cellText = await cells.nth(i).textContent();
+      if (cellText?.trim() === siteName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Get background and text color from an Access Status cell
+   * @param {import('@playwright/test').Locator} statusCell - The cell
+   * @param {string} statusText - Text to look for (e.g. "Active")
+   * @returns {Promise<{backgroundColor: string, textColor: string}>}
+   */
+  async getStatusCellColors(statusCell, statusText) {
+    const statusDiv = statusCell
+      .locator(`div:has-text("${statusText}")`);
+    const hasDivElement = await statusDiv.count() > 0;
+
+    if (hasDivElement) {
+      const backgroundColor = await statusDiv.evaluate(
+        (el) => window.getComputedStyle(el).backgroundColor,
+      );
+      const textColor = await statusDiv.evaluate(
+        (el) => window.getComputedStyle(el).color,
+      );
+      return { backgroundColor, textColor };
+    }
+
+    // Fallback: check inner element or the cell itself
+    const innerElement = statusCell.locator('*').first();
+    const hasInnerElement = await innerElement.count() > 0;
+    const target = hasInnerElement ? innerElement : statusCell;
+
+    const backgroundColor = await target.evaluate(
+      (el) => window.getComputedStyle(el).backgroundColor,
+    );
+    const textColor = await target.evaluate(
+      (el) => window.getComputedStyle(el).color,
+    );
+    return { backgroundColor, textColor };
+  }
+
+  /**
+   * Log text color readability check
+   * @param {string} textColor - CSS color string
+   * @returns {void}
+   */
+  verifyTextColorReadability(textColor) {
+    this.logger.info(`Access Status text color: ${textColor}`);
+
+    const isLightColor = isColorMatch(
+      textColor, LIGHT_COLORS, LIGHT_PATTERNS,
+    );
+
+    if (!isLightColor) {
+      this.logger.warn(
+        'Access Status text color may not be optimal '
+        + `for readability. Color: ${textColor}`,
+      );
+    } else {
+      this.logger.info(
+        '✓ Access Status has light text color (white or near-white)',
+      );
+    }
+  }
+
+  /**
+   * Verify Access Status text and background color for a site
+   * @param {string} siteName - Site name to verify
+   * @param {Function} getAccessStatusFn - Callback to get status text
+   * @param {string} expectedStatus - Expected status text
+   * @param {string} colorName - Color name for logging
+   * @param {string[]} colorValues - Valid background color values
+   * @param {RegExp[]} colorPatterns - Valid background color patterns
+   * @returns {Promise<void>}
+   */
+  async verifyAccessStatusWithColor(
+    siteName, getAccessStatusFn, expectedStatus,
+    colorName, colorValues, colorPatterns,
+  ) {
+    this.logger.action(
+      `Verifying Access Status is "${expectedStatus}" `
+      + `with ${colorName} background`,
+    );
+
+    const accessStatus = await getAccessStatusFn(siteName);
+    if (accessStatus !== expectedStatus) {
+      throw new Error(
+        `Access Status is not "${expectedStatus}". `
+        + `Actual: ${accessStatus}`,
+      );
+    }
+    this.logger.info(
+      `✓ Access Status text is "${expectedStatus}"`,
+    );
+
+    const statusCell = await this.findAccessStatusCell(siteName);
+    const { backgroundColor, textColor } =
+      await this.getStatusCellColors(statusCell, expectedStatus);
+
+    this.logger.info(
+      `Access Status background color: ${backgroundColor}`,
+    );
+
+    if (!isColorMatch(backgroundColor, colorValues, colorPatterns)) {
+      throw new Error(
+        `Access Status background color is not ${colorName}. `
+        + `Actual: ${backgroundColor}`,
+      );
+    }
+    this.logger.info(
+      `✓ Access Status has ${colorName} background color`,
+    );
+
+    this.verifyTextColorReadability(textColor);
+    this.logger.info(
+      `✓ Access Status is "${expectedStatus}" `
+      + `with ${colorName} background and visible text`,
+    );
+  }
+
+  /**
    * Verify Access Status is Active (simple text check)
    * @param {string} siteName - Site name to verify
-   * @param {Function} getAccessStatusFn - Callback to get access status from facade
+   * @param {Function} getAccessStatusFn - Callback to get access status
    * @returns {Promise<void>}
    */
   async verifyAccessStatusIsActive(siteName, getAccessStatusFn) {
@@ -22,7 +258,9 @@ class AccessStatusVerificationOperations {
     const accessStatus = await getAccessStatusFn(siteName);
 
     if (accessStatus !== 'Active') {
-      throw new Error(`Access Status is not Active. Actual: ${accessStatus}`);
+      throw new Error(
+        `Access Status is not Active. Actual: ${accessStatus}`,
+      );
     }
 
     this.logger.info('✓ Access Status is Active');
@@ -31,451 +269,69 @@ class AccessStatusVerificationOperations {
   /**
    * Verify Access Status is Active with green background
    * @param {string} siteName - Site name to verify
-   * @param {Function} getAccessStatusFn - Callback to get access status from facade
+   * @param {Function} getAccessStatusFn - Callback to get access status
    * @returns {Promise<void>}
    */
-  async verifyAccessStatusIsActiveWithColor(siteName, getAccessStatusFn) {
-    this.logger.action('Verifying Access Status is "Active" with green background');
-
-    // Get access status text
-    const accessStatus = await getAccessStatusFn(siteName);
-
-    if (accessStatus !== 'Active') {
-      throw new Error(`Access Status is not "Active". Actual: ${accessStatus}`);
-    }
-
-    this.logger.info('✓ Access Status text is "Active"');
-
-    // Find the correct grid with Access Status column
-    const allGrids = this.page.locator('.e-grid');
-    const gridCount = await allGrids.count();
-    let statusCell = null;
-
-    for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
-      const grid = allGrids.nth(gridIndex);
-      const headers = grid.locator('.e-gridheader .e-headercell');
-      const headerCount = await headers.count();
-
-      let hasAccessStatus = false;
-      let statusColumnIndex = -1;
-
-      for (let i = 0; i < headerCount; i++) {
-        const headerText = await headers.nth(i).textContent();
-        if (headerText && headerText.includes('Access Status')) {
-          hasAccessStatus = true;
-          statusColumnIndex = i;
-          break;
-        }
-      }
-
-      if (hasAccessStatus) {
-        // Find the row for this site
-        const rows = grid.locator('.e-row');
-        const rowCount = await rows.count();
-
-        for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-          const row = rows.nth(rowIndex);
-          const cells = row.locator('td');
-          const cellCount = await cells.count();
-
-          // Check if this row contains the site name
-          let foundSite = false;
-          for (let cellIndex = 0; cellIndex < cellCount; cellIndex++) {
-            const cellText = await cells.nth(cellIndex).textContent();
-            if (cellText && cellText.trim() === siteName) {
-              foundSite = true;
-              break;
-            }
-          }
-
-          if (foundSite && statusColumnIndex < cellCount) {
-            statusCell = cells.nth(statusColumnIndex);
-            break;
-          }
-        }
-
-        if (statusCell) {
-          break;
-        }
-      }
-    }
-
-    if (!statusCell) {
-      throw new Error(`Could not find Access Status cell for site: ${siteName}`);
-    }
-
-    // Look for the div element with "Active" text that has the green background
-    const activeDiv = statusCell.locator('div:has-text("Active")');
-    const hasDivElement = await activeDiv.count() > 0;
-
-    let backgroundColor;
-    let textColor;
-
-    if (hasDivElement) {
-      // Check the div element with "Active" text
-      backgroundColor = await activeDiv.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-      this.logger.info(`Access Status div background color: ${backgroundColor}`);
-
-      textColor = await activeDiv.evaluate((el) => window.getComputedStyle(el).color);
-      this.logger.info(`Access Status div text color: ${textColor}`);
-    } else {
-      // Fallback: check any inner element or the cell itself
-      const innerElement = statusCell.locator('*').first();
-      const hasInnerElement = await innerElement.count() > 0;
-
-      if (hasInnerElement) {
-        backgroundColor = await innerElement.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-        this.logger.info(`Access Status inner element background color: ${backgroundColor}`);
-
-        textColor = await innerElement.evaluate((el) => window.getComputedStyle(el).color);
-      } else {
-        backgroundColor = await statusCell.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-        this.logger.info(`Access Status cell background color: ${backgroundColor}`);
-
-        textColor = await statusCell.evaluate((el) => window.getComputedStyle(el).color);
-      }
-    }
-
-    // Green color variants: rgb(0, 128, 0), rgb(40, 167, 69), rgb(76, 175, 80), rgb(46, 125, 50), rgb(67, 160, 71), rgb(56, 142, 60)
-    const isGreen = backgroundColor.includes('rgb(0, 128, 0)')
-                    || backgroundColor.includes('rgb(40, 167, 69)')
-                    || backgroundColor.includes('rgb(76, 175, 80)')
-                    || backgroundColor.includes('rgb(46, 125, 50)')
-                    || backgroundColor.includes('rgb(67, 160, 71)')
-                    || backgroundColor.includes('rgb(56, 142, 60)')
-                    || backgroundColor.includes('rgb(34, 139, 34)')
-                    || backgroundColor.includes('rgb(0, 150, 0)')
-                    || backgroundColor.match(/rgb\([0-9]{1,2},\s*1[2-6][0-9],\s*[0-9]{1,2}\)/)
-                    || backgroundColor.match(/rgb\([3-7][0-9],\s*1[4-7][0-9],\s*[5-8][0-9]\)/);
-
-    if (!isGreen) {
-      throw new Error(`Access Status background color is not green. Actual: ${backgroundColor}`);
-    }
-
-    this.logger.info('✓ Access Status has green background color');
-
-    // Verify text color is visible (white or light color)
-    this.logger.info(`Access Status text color: ${textColor}`);
-
-    // White or light color
-    const isLightColor = textColor.includes('rgb(255, 255, 255)')
-                         || textColor.includes('rgb(248, 249, 250)')
-                         || textColor.includes('white')
-                         || textColor.match(/rgb\(2[4-5][0-9],\s*2[4-5][0-9],\s*2[4-5][0-9]\)/);
-
-    if (!isLightColor) {
-      this.logger.warn(`Access Status text color may not be optimal for readability. Color: ${textColor}`);
-    } else {
-      this.logger.info('✓ Access Status has light text color (white or near-white)');
-    }
-
-    this.logger.info('✓ Access Status is "Active" with green background and visible text');
+  async verifyAccessStatusIsActiveWithColor(
+    siteName, getAccessStatusFn,
+  ) {
+    await this.verifyAccessStatusWithColor(
+      siteName, getAccessStatusFn, 'Active',
+      'green', GREEN_COLORS, GREEN_PATTERNS,
+    );
   }
 
   /**
    * Verify Access Status is Expired with red background
    * @param {string} siteName - Site name to verify
-   * @param {Function} getAccessStatusFn - Callback to get access status from facade
+   * @param {Function} getAccessStatusFn - Callback to get access status
    * @returns {Promise<void>}
    */
   async verifyAccessStatusIsExpired(siteName, getAccessStatusFn) {
-    this.logger.action('Verifying Access Status is Expired with red background');
-
-    // Get access status text
-    const accessStatus = await getAccessStatusFn(siteName);
-
-    if (accessStatus !== 'Expired') {
-      throw new Error(`Access Status is not Expired. Actual: ${accessStatus}`);
-    }
-
-    this.logger.info('✓ Access Status text is "Expired"');
-
-    // Find the correct grid with Access Status column
-    const allGrids = this.page.locator('.e-grid');
-    const gridCount = await allGrids.count();
-    let statusCell = null;
-
-    for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
-      const grid = allGrids.nth(gridIndex);
-      const headers = grid.locator('.e-gridheader .e-headercell');
-      const headerCount = await headers.count();
-
-      let hasAccessStatus = false;
-      let statusColumnIndex = -1;
-
-      for (let i = 0; i < headerCount; i++) {
-        const headerText = await headers.nth(i).textContent();
-        if (headerText && headerText.includes('Access Status')) {
-          hasAccessStatus = true;
-          statusColumnIndex = i;
-          break;
-        }
-      }
-
-      if (hasAccessStatus) {
-        // Find the row for this site
-        const rows = grid.locator('.e-row');
-        const rowCount = await rows.count();
-
-        for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-          const row = rows.nth(rowIndex);
-          const cells = row.locator('td');
-          const cellCount = await cells.count();
-
-          // Check if this row contains the site name
-          let foundSite = false;
-          for (let cellIndex = 0; cellIndex < cellCount; cellIndex++) {
-            const cellText = await cells.nth(cellIndex).textContent();
-            if (cellText && cellText.trim() === siteName) {
-              foundSite = true;
-              break;
-            }
-          }
-
-          if (foundSite && statusColumnIndex < cellCount) {
-            statusCell = cells.nth(statusColumnIndex);
-            break;
-          }
-        }
-
-        if (statusCell) {
-          break;
-        }
-      }
-    }
-
-    if (!statusCell) {
-      throw new Error(`Could not find Access Status cell for site: ${siteName}`);
-    }
-
-    // Look for the div element with "Expired" text that has the red background
-    const expiredDiv = statusCell.locator('div:has-text("Expired")');
-    const hasDivElement = await expiredDiv.count() > 0;
-
-    let backgroundColor;
-    let textColor;
-
-    if (hasDivElement) {
-      // Check the div element with "Expired" text
-      backgroundColor = await expiredDiv.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-      this.logger.info(`Access Status div background color: ${backgroundColor}`);
-
-      textColor = await expiredDiv.evaluate((el) => window.getComputedStyle(el).color);
-      this.logger.info(`Access Status div text color: ${textColor}`);
-    } else {
-      // Fallback: check any inner element or the cell itself
-      const innerElement = statusCell.locator('*').first();
-      const hasInnerElement = await innerElement.count() > 0;
-
-      if (hasInnerElement) {
-        backgroundColor = await innerElement.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-        this.logger.info(`Access Status inner element background color: ${backgroundColor}`);
-
-        textColor = await innerElement.evaluate((el) => window.getComputedStyle(el).color);
-      } else {
-        backgroundColor = await statusCell.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-        this.logger.info(`Access Status cell background color: ${backgroundColor}`);
-
-        textColor = await statusCell.evaluate((el) => window.getComputedStyle(el).color);
-      }
-    }
-
-    // Red color should be rgb(255, 0, 0) or similar red variant
-    // Common red variants: rgb(255, 0, 0), rgb(220, 53, 69), rgb(255, 99, 71), rgb(244, 67, 54), rgb(213, 0, 0), rgb(198, 40, 40)
-    const isRed = backgroundColor.includes('rgb(255, 0, 0)')
-                  || backgroundColor.includes('rgb(220, 53, 69)')
-                  || backgroundColor.includes('rgb(255, 99, 71)')
-                  || backgroundColor.includes('rgb(244, 67, 54)')
-                  || backgroundColor.includes('rgb(213, 0, 0)')
-                  || backgroundColor.includes('rgb(198, 40, 40)')
-                  || backgroundColor.match(/rgb\(2[2-5][0-9],\s*[0-9]{1,2},\s*[0-9]{1,2}\)/);
-
-    if (!isRed) {
-      throw new Error(`Access Status background color is not red. Actual: ${backgroundColor}`);
-    }
-
-    this.logger.info('✓ Access Status has red background color');
-
-    // Verify text color is visible (white or light color)
-    this.logger.info(`Access Status text color: ${textColor}`);
-
-    // White or light color should be rgb(255, 255, 255) or similar
-    const isLightColor = textColor.includes('rgb(255, 255, 255)')
-                         || textColor.includes('rgb(248, 249, 250)')
-                         || textColor.includes('white')
-                         || textColor.match(/rgb\(2[4-5][0-9],\s*2[4-5][0-9],\s*2[4-5][0-9]\)/);
-
-    if (!isLightColor) {
-      this.logger.warn(`Access Status text color may not be optimal for readability. Color: ${textColor}`);
-    } else {
-      this.logger.info('✓ Access Status has light text color (white or near-white)');
-    }
-
-    this.logger.info('✓ Access Status is "Expired" with red background and visible text');
+    await this.verifyAccessStatusWithColor(
+      siteName, getAccessStatusFn, 'Expired',
+      'red', RED_COLORS, RED_PATTERNS,
+    );
   }
 
   /**
    * Verify Access Status is Expiring Soon with orange background
    * @param {string} siteName - Site name to verify
-   * @param {Function} getAccessStatusFn - Callback to get access status from facade
+   * @param {Function} getAccessStatusFn - Callback to get access status
    * @returns {Promise<void>}
    */
   async verifyAccessStatusIsExpiringSoon(siteName, getAccessStatusFn) {
-    this.logger.action('Verifying Access Status is "Expiring Soon" with orange background');
-
-    // Get access status text
-    const accessStatus = await getAccessStatusFn(siteName);
-
-    if (accessStatus !== 'Expiring Soon') {
-      throw new Error(`Access Status is not "Expiring Soon". Actual: ${accessStatus}`);
-    }
-
-    this.logger.info('✓ Access Status text is "Expiring Soon"');
-
-    // Find the correct grid with Access Status column
-    const allGrids = this.page.locator('.e-grid');
-    const gridCount = await allGrids.count();
-    let statusCell = null;
-
-    for (let gridIndex = 0; gridIndex < gridCount; gridIndex++) {
-      const grid = allGrids.nth(gridIndex);
-      const headers = grid.locator('.e-gridheader .e-headercell');
-      const headerCount = await headers.count();
-
-      let hasAccessStatus = false;
-      let statusColumnIndex = -1;
-
-      for (let i = 0; i < headerCount; i++) {
-        const headerText = await headers.nth(i).textContent();
-        if (headerText && headerText.includes('Access Status')) {
-          hasAccessStatus = true;
-          statusColumnIndex = i;
-          break;
-        }
-      }
-
-      if (hasAccessStatus) {
-        // Find the row for this site
-        const rows = grid.locator('.e-row');
-        const rowCount = await rows.count();
-
-        for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-          const row = rows.nth(rowIndex);
-          const cells = row.locator('td');
-          const cellCount = await cells.count();
-
-          // Check if this row contains the site name
-          let foundSite = false;
-          for (let cellIndex = 0; cellIndex < cellCount; cellIndex++) {
-            const cellText = await cells.nth(cellIndex).textContent();
-            if (cellText && cellText.trim() === siteName) {
-              foundSite = true;
-              break;
-            }
-          }
-
-          if (foundSite && statusColumnIndex < cellCount) {
-            statusCell = cells.nth(statusColumnIndex);
-            break;
-          }
-        }
-
-        if (statusCell) {
-          break;
-        }
-      }
-    }
-
-    if (!statusCell) {
-      throw new Error(`Could not find Access Status cell for site: ${siteName}`);
-    }
-
-    // Look for the div element with "Expiring Soon" text that has the orange background
-    const expiringDiv = statusCell.locator('div:has-text("Expiring Soon")');
-    const hasDivElement = await expiringDiv.count() > 0;
-
-    let backgroundColor;
-    let textColor;
-
-    if (hasDivElement) {
-      // Check the div element with "Expiring Soon" text
-      backgroundColor = await expiringDiv.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-      this.logger.info(`Access Status div background color: ${backgroundColor}`);
-
-      textColor = await expiringDiv.evaluate((el) => window.getComputedStyle(el).color);
-      this.logger.info(`Access Status div text color: ${textColor}`);
-    } else {
-      // Fallback: check any inner element or the cell itself
-      const innerElement = statusCell.locator('*').first();
-      const hasInnerElement = await innerElement.count() > 0;
-
-      if (hasInnerElement) {
-        backgroundColor = await innerElement.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-        this.logger.info(`Access Status inner element background color: ${backgroundColor}`);
-
-        textColor = await innerElement.evaluate((el) => window.getComputedStyle(el).color);
-      } else {
-        backgroundColor = await statusCell.evaluate((el) => window.getComputedStyle(el).backgroundColor);
-        this.logger.info(`Access Status cell background color: ${backgroundColor}`);
-
-        textColor = await statusCell.evaluate((el) => window.getComputedStyle(el).color);
-      }
-    }
-
-    // Orange color variants: rgb(255, 165, 0), rgb(255, 140, 0), rgb(255, 152, 0), rgb(243, 156, 18), rgb(230, 126, 34), rgb(235, 115, 0)
-    const isOrange = backgroundColor.includes('rgb(255, 165, 0)')
-                     || backgroundColor.includes('rgb(255, 140, 0)')
-                     || backgroundColor.includes('rgb(255, 152, 0)')
-                     || backgroundColor.includes('rgb(243, 156, 18)')
-                     || backgroundColor.includes('rgb(230, 126, 34)')
-                     || backgroundColor.includes('rgb(235, 115, 0)')
-                     || backgroundColor.includes('rgb(251, 140, 0)')
-                     || backgroundColor.match(/rgb\(2[3-5][0-9],\s*1[0-6][0-9],\s*[0-4][0-9]\)/);
-
-    if (!isOrange) {
-      throw new Error(`Access Status background color is not orange. Actual: ${backgroundColor}`);
-    }
-
-    this.logger.info('✓ Access Status has orange background color');
-
-    // Verify text color is visible (white or light color)
-    this.logger.info(`Access Status text color: ${textColor}`);
-
-    // White or light color
-    const isLightColor = textColor.includes('rgb(255, 255, 255)')
-                         || textColor.includes('rgb(248, 249, 250)')
-                         || textColor.includes('white')
-                         || textColor.match(/rgb\(2[4-5][0-9],\s*2[4-5][0-9],\s*2[4-5][0-9]\)/);
-
-    if (!isLightColor) {
-      this.logger.warn(`Access Status text color may not be optimal for readability. Color: ${textColor}`);
-    } else {
-      this.logger.info('✓ Access Status has light text color (white or near-white)');
-    }
-
-    this.logger.info('✓ Access Status is "Expiring Soon" with orange background and visible text');
+    await this.verifyAccessStatusWithColor(
+      siteName, getAccessStatusFn, 'Expiring Soon',
+      'orange', ORANGE_COLORS, ORANGE_PATTERNS,
+    );
   }
 
   /**
    * Verify Access Status is empty (no status displayed)
    * @param {string} siteName - Site name to verify
-   * @param {Function} getAccessStatusFn - Callback to get access status from facade
+   * @param {Function} getAccessStatusFn - Callback to get access status
    * @returns {Promise<void>}
    */
   async verifyAccessStatusIsEmpty(siteName, getAccessStatusFn) {
-    this.logger.action('Verifying Access Status is empty (no status displayed)');
+    this.logger.action(
+      'Verifying Access Status is empty (no status displayed)',
+    );
 
-    // Get the Access Status
     const accessStatus = await getAccessStatusFn(siteName);
-
-    // Remove all whitespace and check if empty
-    const cleanedStatus = accessStatus.replace(/[\s\u200B-\u200D\uFEFF]/g, '').trim();
+    const cleanedStatus =
+      accessStatus.replace(/[\s\u200B-\u200D\uFEFF]/g, '').trim();
 
     if (cleanedStatus !== '') {
-      throw new Error(`Expected Access Status to be empty, but found: "${accessStatus}"`);
+      throw new Error(
+        'Expected Access Status to be empty, '
+        + `but found: "${accessStatus}"`,
+      );
     }
 
-    this.logger.info('✓ Access Status is empty (no status displayed)');
+    this.logger.info(
+      '✓ Access Status is empty (no status displayed)',
+    );
   }
 
   /**
@@ -483,18 +339,27 @@ class AccessStatusVerificationOperations {
    * @returns {Promise<void>}
    */
   async verifyNoRecordsToDisplay() {
-    this.logger.action('Verifying "No records to display" message is visible');
+    this.logger.action(
+      'Verifying "No records to display" message is visible',
+    );
 
-    // Wait for the empty record message to appear
-    const noRecordsLocator = this.page.locator('.e-emptyrecord, .e-grid .e-gridcontent:has-text("No records to display")');
-    await noRecordsLocator.waitFor({ state: 'visible', timeout: 10000 });
+    const noRecordsLocator = this.page.locator(
+      '.e-emptyrecord, '
+      + '.e-grid .e-gridcontent:has-text("No records to display")',
+    );
+    await noRecordsLocator.waitFor(
+      { state: 'visible', timeout: 10000 },
+    );
 
-    const isVisible = await noRecordsLocator.isVisible();
-    if (isVisible) {
-      this.logger.info('✓ "No records to display" message is visible');
-    } else {
-      throw new Error('"No records to display" message is not visible');
+    if (!await noRecordsLocator.isVisible()) {
+      throw new Error(
+        '"No records to display" message is not visible',
+      );
     }
+
+    this.logger.info(
+      '✓ "No records to display" message is visible',
+    );
   }
 
   /**
@@ -502,13 +367,23 @@ class AccessStatusVerificationOperations {
    * @returns {Promise<string[]>}
    */
   async getSiteAccessGridHeaders() {
-    this.logger.action('Getting visible column headers from Site Access grid');
+    this.logger.action(
+      'Getting visible column headers from Site Access grid',
+    );
 
     // Wait for grid to be visible and fully loaded
-    await this.page.locator('.e-grid').first().waitFor({ state: 'visible', timeout: 10000 });
-    await this.page.waitForTimeout(5000); // Increased wait for all columns to render
+    await this.page.locator('.e-grid').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator('.e-grid .e-row').first()
+      .waitFor({ state: 'visible', timeout: 15000 })
+      .catch(() => {});
+    await this.page.locator('.e-spinner-pane')
+      .waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {});
+    await this.page
+      .waitForLoadState('networkidle', { timeout: 10000 })
+      .catch(() => {});
 
-    // Find the correct grid with both Access Status and Access Expiration columns
     const allGrids = this.page.locator('.e-grid');
     const gridCount = await allGrids.count();
 
@@ -522,49 +397,58 @@ class AccessStatusVerificationOperations {
 
       for (let i = 0; i < headerCount; i++) {
         const headerText = await headers.nth(i).textContent();
-        if (headerText && headerText.includes('Access Status')) {
+        if (headerText?.includes('Access Status')) {
           hasAccessStatus = true;
         }
-        if (headerText && headerText.includes('Access Expiration')) {
+        if (headerText?.includes('Access Expiration')) {
           hasAccessExpiration = true;
         }
       }
 
-      // Found the site access grid
-      if (hasAccessStatus && hasAccessExpiration) {
-        const columnHeaders = [];
+      if (!hasAccessStatus || !hasAccessExpiration) {
+        continue;
+      }
 
-        for (let i = 0; i < headerCount; i++) {
-          const header = headers.nth(i);
-          const isVisible = await header.isVisible().catch(() => false);
+      // Found the site access grid — collect visible headers
+      const columnHeaders = [];
 
-          if (isVisible) {
-            // Try to get the header text from .e-headertext or .e-headercelldiv first
-            let headerText = await header.locator('.e-headertext').first().textContent().catch(() => null);
-            if (!headerText) {
-              headerText = await header.locator('.e-headercelldiv').first().textContent().catch(() => null);
-            }
-            if (!headerText) {
-              // Fallback to direct text content, but only get the first line
-              const fullText = await header.textContent();
-              headerText = fullText.split('\n')[0];
-            }
+      for (let i = 0; i < headerCount; i++) {
+        const header = headers.nth(i);
+        const isVisible =
+          await header.isVisible().catch(() => false);
 
-            const cleanedText = headerText.trim().replace(/\s+/g, ' '); // Normalize whitespace
-
-            // Skip empty headers, action columns, or headers with accessibility hints
-            if (cleanedText
-                && !cleanedText.includes('e-icon')
-                && !cleanedText.includes('Press Alt Down')
-                && !cleanedText.includes('Press Enter to sort')) {
-              columnHeaders.push(cleanedText);
-            }
-          }
+        if (!isVisible) {
+          continue;
         }
 
-        this.logger.info(`Found ${columnHeaders.length} visible columns: ${columnHeaders.join(', ')}`);
-        return columnHeaders;
+        let headerText = await header.locator('.e-headertext')
+          .first().textContent().catch(() => null);
+        if (!headerText) {
+          headerText = await header.locator('.e-headercelldiv')
+            .first().textContent().catch(() => null);
+        }
+        if (!headerText) {
+          const fullText = await header.textContent();
+          headerText = fullText.split('\n')[0];
+        }
+
+        const cleanedText =
+          headerText.trim().replace(/\s+/g, ' ');
+
+        // Skip empty, icon, or accessibility-hint headers
+        if (cleanedText
+            && !cleanedText.includes('e-icon')
+            && !cleanedText.includes('Press Alt Down')
+            && !cleanedText.includes('Press Enter to sort')) {
+          columnHeaders.push(cleanedText);
+        }
       }
+
+      this.logger.info(
+        `Found ${columnHeaders.length} visible columns: `
+        + columnHeaders.join(', '),
+      );
+      return columnHeaders;
     }
 
     throw new Error('Site Access grid not found');

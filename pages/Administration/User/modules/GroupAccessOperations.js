@@ -16,7 +16,9 @@ class GroupAccessOperations extends BasePage {
     await radioButton.waitFor({ state: 'visible', timeout: 10000 });
     await radioButton.click();
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1000);
+    // Wait for grid rows to render after radio button change
+    await this.page.locator('.e-grid .e-row').first()
+      .waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
 
     this.logger.info('✓ "Show groups with no access granted" enabled');
   }
@@ -31,7 +33,9 @@ class GroupAccessOperations extends BasePage {
     await radioButton.waitFor({ state: 'visible', timeout: 10000 });
     await radioButton.click();
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1000);
+    // Wait for grid rows to render after radio button change
+    await this.page.locator('.e-grid .e-row').first()
+      .waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
 
     this.logger.info('✓ "Show groups with access granted" enabled');
   }
@@ -51,7 +55,8 @@ class GroupAccessOperations extends BasePage {
     // Click checkbox in the row
     const checkbox = groupRow.locator('input[type="checkbox"]').first();
     await checkbox.check();
-    await this.page.waitForTimeout(500);
+    // Wait for checkbox to be checked
+    await checkbox.waitFor({ state: 'attached', timeout: 5000 });
 
     this.logger.info(`✓ Access granted to group: ${groupName}`);
   }
@@ -64,8 +69,6 @@ class GroupAccessOperations extends BasePage {
     this.logger.action('Verifying "Show groups with access granted" is selected');
 
     // Wait for the system to auto-select the radio button after saving
-    await this.page.waitForTimeout(3000);
-
     const radioButton = this.page.locator(LOCATORS.showGroupsWithAccessRadio).first();
     await radioButton.waitFor({ state: 'visible', timeout: 10000 });
 
@@ -115,7 +118,9 @@ class GroupAccessOperations extends BasePage {
       // Use evaluate to bypass mdl-cell div intercepting pointer events
       const groupCell = groupRow.locator('td').first();
       await groupCell.evaluate((el) => el.click());
-      await this.page.waitForTimeout(500);
+      // Wait for row to be selected (highlighted)
+      await this.page.locator('.e-row.e-selectionbackground').first()
+        .waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
       this.logger.info('✓ Row selected (highlighted)');
 
       // Right-click on the row to open context menu
@@ -124,7 +129,9 @@ class GroupAccessOperations extends BasePage {
           bubbles: true, cancelable: true, view: window,
         }));
       });
-      await this.page.waitForTimeout(500);
+      // Wait for context menu to appear
+      await this.page.locator('text=Remove').first()
+        .waitFor({ state: 'visible', timeout: 5000 });
       this.logger.info('✓ Context menu opened');
 
       // Click Remove option
@@ -158,7 +165,8 @@ class GroupAccessOperations extends BasePage {
       } catch (error) {
         this.logger.info('Row colour not yet updated, will retry...');
         attempt++;
-        await this.page.waitForTimeout(1000);
+        // Wait for DOM to settle before retry
+        await this.page.waitForLoadState('domcontentloaded').catch(() => {});
       }
     }
 

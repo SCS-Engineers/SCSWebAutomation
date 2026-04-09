@@ -110,12 +110,14 @@ class AccessExpirationDateOperations extends BasePage {
 
     // Double-click to enable editing
     await this.editAccessExpirationDateCell(siteName);
-    await this.page.waitForTimeout(1000);
 
     // Click the close button to clear the date
     const closeButton = this.page.getByRole('button', { name: 'close' });
+    await closeButton.waitFor({ state: 'visible', timeout: 5000 });
     await closeButton.click();
-    await this.page.waitForTimeout(500);
+    // Wait for input to be cleared
+    await this.page.locator('.e-input-group input.e-input').first()
+      .waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
 
     this.logger.info('✓ Access Expiration Date cleared');
   }
@@ -148,8 +150,8 @@ class AccessExpirationDateOperations extends BasePage {
         this.logger.warn(`Attempt ${attempt} failed: ${error.message}`);
 
         if (attempt < retries) {
-          // Wait before retry
-          await this.page.waitForTimeout(2000);
+          // Wait for page to settle before retry
+          await this.page.waitForLoadState('domcontentloaded').catch(() => {});
 
           // Try to refresh the grid state
           // Intentionally suppress timeout - DOM load state is optimal but not required
@@ -170,7 +172,6 @@ class AccessExpirationDateOperations extends BasePage {
     this.logger.action(`Verifying Access Expiration Date is empty for site: ${siteName}`);
 
     // Wait for grid to stabilize
-    await this.page.waitForTimeout(1000);
     await this.page.locator('.e-grid .e-row').first().waitFor({ state: 'visible', timeout: 10000 });
 
     // Find the correct grid with Access Expiration column
@@ -327,9 +328,7 @@ class AccessExpirationDateOperations extends BasePage {
 
     // Click to open dropdown
     await dropdown.click();
-    await this.page.waitForTimeout(1000);
-
-    // Get all dropdown list items excluding "MAINT" option
+    // Wait for dropdown list items to appear
     const allItems = this.page.locator('.e-list-item').filter({ hasNotText: /^$/ });
     await allItems.first().waitFor({ state: 'visible', timeout: 5000 });
 
@@ -355,7 +354,9 @@ class AccessExpirationDateOperations extends BasePage {
     const selectedText = await selectedItem.textContent();
 
     await selectedItem.click();
-    await this.page.waitForTimeout(500);
+    // Wait for dropdown to close after selection
+    await this.page.locator('.e-popup-open').first()
+      .waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
 
     this.logger.info(`✓ Selected permission module: ${selectedText.trim()}`);
     return selectedText.trim();
@@ -380,8 +381,6 @@ class AccessExpirationDateOperations extends BasePage {
       const selectedModule = await this.changePermissionModuleToRandom();
 
       // Wait for any updates to complete
-      await this.page.waitForTimeout(1000);
-      // Intentionally suppress timeout - networkidle state is optimal but not required
       await this.page.waitForLoadState('networkidle').catch(() => {});
 
       // Verify expiration date
@@ -419,18 +418,19 @@ class AccessExpirationDateOperations extends BasePage {
     // Double-click to enable editing
     await this.editAccessExpirationDateCell(siteName);
 
-    // Wait for date picker to be ready
-    await this.page.waitForTimeout(2000);
+    // Wait for date picker input to be ready
+    await this.page.locator('.e-input-group input.e-input, input[role="combobox"]').first()
+      .waitFor({ state: 'visible', timeout: 5000 });
 
     // Select all and type the new date (this works better than fill)
     await this.page.keyboard.press('Control+A');
-    await this.page.waitForTimeout(300);
     await this.page.keyboard.type(`${month}/${day}/${year}`);
-    await this.page.waitForTimeout(500);
 
     // Press Enter to confirm
     await this.page.keyboard.press('Enter');
-    await this.page.waitForTimeout(1000);
+    // Wait for edit mode to close (input should disappear)
+    await this.page.locator('.e-input-group input.e-input, input[role="combobox"]').first()
+      .waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
 
     this.logger.info(`✓ Access Expiration Date set to yesterday: ${month}/${day}/${year}`);
   }
@@ -704,8 +704,7 @@ class AccessExpirationDateOperations extends BasePage {
     const expirationCell =
       siteRow.locator('td:not(.e-hide)').nth(expirationColumnIndex);
     await expirationCell.dblclick();
-    await this.page.waitForTimeout(1000);
-
+    // Wait briefly for any edit mode to activate
     const dateInput = this.page
       .locator('.e-input-group input.e-input, input[role="combobox"]')
       .first();
@@ -740,7 +739,9 @@ class AccessExpirationDateOperations extends BasePage {
     // If editAccessExpirationDateCell succeeds, the field is editable
     // Close the edit mode
     await this.page.keyboard.press('Escape');
-    await this.page.waitForTimeout(500);
+    // Wait for edit mode to close
+    await this.page.locator('.e-input-group input.e-input, input[role="combobox"]').first()
+      .waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
 
     this.logger.info(
       `✓ Access Expiration field is editable for "${siteName}"`,

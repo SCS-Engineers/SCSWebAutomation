@@ -15,6 +15,9 @@ const {
  * including confirmation popups and Access Status/Expiration column states.
  */
 test.describe('Admin User Mgmt Group Level Access', () => {
+  /** Extended timeout for tests with site-group revert cleanup (7 min) */
+  const EXTENDED_TEST_TIMEOUT = 420000;
+
   let testSetup;
   let administrationUserPage;
   let helpers;
@@ -31,6 +34,29 @@ test.describe('Admin User Mgmt Group Level Access', () => {
     logger.info('Test setup completed');
     logger.divider();
   });
+
+  /**
+   * Shared finally-block cleanup for EXP-48/49/50 tests.
+   * Skips phases the main flow already completed.
+   * @param {Object} params - Cleanup parameters
+   * @param {string} params.groupName - Group to clean up
+   * @param {string} params.siteName - Site to clean up
+   * @param {Object} params.originalGroups - Original site groups to revert
+   * @param {boolean} params.hasUserAccessBeenCleaned - Whether user access was cleaned
+   * @param {boolean} params.haveSiteGroupsBeenReverted - Whether site groups were reverted
+   * @returns {Promise<void>}
+   */
+  const safeCleanupAll = async ({
+    groupName, siteName, originalGroups,
+    hasUserAccessBeenCleaned, haveSiteGroupsBeenReverted,
+  }) => {
+    if (!hasUserAccessBeenCleaned) {
+      await helpers.safeCleanupUserAccess(groupName, siteName);
+    }
+    if (!haveSiteGroupsBeenReverted) {
+      await helpers.safeRevertSiteGroups(siteName, originalGroups);
+    }
+  };
 
   // ─── Tests ────────────────────────────────────────────────────────
 
@@ -194,8 +220,7 @@ test.describe('Admin User Mgmt Group Level Access', () => {
   });
 
   test('ADMIN-USR-ACC-EXP-48 - Verify confirmation message when assigning a site with an expiry date to a group to which the user already has access', async () => {
-    // Extend timeout — this test has cleanup that reverts site groups
-    test.setTimeout(420000);
+    test.setTimeout(EXTENDED_TEST_TIMEOUT);
 
     const testName = test.info().title;
     logger.testStart(testName);
@@ -204,52 +229,56 @@ test.describe('Admin User Mgmt Group Level Access', () => {
       userName, siteName, groupName, successMessage, siteGroups,
     } = groupLevelAccess48;
 
-    const originalGroups = AdminUserTestHelpers.buildOriginalGroups(siteGroups);
+    const originalGroups =
+      AdminUserTestHelpers.buildOriginalGroups(siteGroups);
 
     // Flags to track which cleanup phases the main flow completed,
     // so the finally block can skip redundant (slow) operations.
-    let isUserAccessCleaned = false;
-    let isSiteGroupsReverted = false;
+    let hasUserAccessBeenCleaned = false;
+    let haveSiteGroupsBeenReverted = false;
 
     try {
       // ── Shared setup: Steps 1-17 ──
       await helpers.performSharedEXP48Setup(groupLevelAccess48);
 
       // ── Cleanup: Remove site and group access ──
-      logger.step(`Step 18: Cleanup — remove site access for "${siteName}"`);
+      logger.step(
+        `Step 18: Cleanup — remove site access for "${siteName}"`,
+      );
       await administrationUserPage.removeAccessForSite(siteName);
       await administrationUserPage.clickSaveButton();
       await administrationUserPage.waitForSuccessMessage();
 
-      logger.step(`Step 19: Cleanup — remove group-level access for "${groupName}"`);
+      logger.step(
+        `Step 19: Cleanup — remove group-level access for "${groupName}"`,
+      );
       await administrationUserPage.clickEditButton();
       await administrationUserPage.openSiteAccessPermissions();
       await administrationUserPage.openGroupAccessPermissions();
       await helpers.cleanupGroupAccess(groupName);
-      isUserAccessCleaned = true;
+      hasUserAccessBeenCleaned = true;
 
       // ── Cleanup: Revert site groups to original values ──
       logger.step('Step 20: Revert site groups to original values');
-      await helpers.revertSiteGroups(siteName, originalGroups, successMessage);
-      isSiteGroupsReverted = true;
+      await helpers.revertSiteGroups(
+        siteName, originalGroups, successMessage,
+      );
+      haveSiteGroupsBeenReverted = true;
 
       logger.testEnd(testName, 'PASSED');
     } catch (error) {
       logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
-      if (!isUserAccessCleaned) {
-        await helpers.safeCleanupUserAccess(groupName, siteName);
-      }
-      if (!isSiteGroupsReverted) {
-        await helpers.safeRevertSiteGroups(siteName, originalGroups);
-      }
+      await safeCleanupAll({
+        groupName, siteName, originalGroups,
+        hasUserAccessBeenCleaned, haveSiteGroupsBeenReverted,
+      });
     }
   });
 
   test('ADMIN-USR-ACC-EXP-49 - Verify no confirmation message when assigning a site with an expiry date to a group after removing group access', async () => {
-    // Extend timeout — EXP-48 shared setup + site group revert
-    test.setTimeout(420000);
+    test.setTimeout(EXTENDED_TEST_TIMEOUT);
 
     const testName = test.info().title;
     logger.testStart(testName);
@@ -258,10 +287,11 @@ test.describe('Admin User Mgmt Group Level Access', () => {
       userName, siteName, groupName, successMessage, siteGroups,
     } = groupLevelAccess49;
 
-    const originalGroups = AdminUserTestHelpers.buildOriginalGroups(siteGroups);
+    const originalGroups =
+      AdminUserTestHelpers.buildOriginalGroups(siteGroups);
 
-    let isUserAccessCleaned = false;
-    let isSiteGroupsReverted = false;
+    let hasUserAccessBeenCleaned = false;
+    let haveSiteGroupsBeenReverted = false;
 
     try {
       // ── Shared setup: Steps 1-17 ──
@@ -269,58 +299,75 @@ test.describe('Admin User Mgmt Group Level Access', () => {
 
       // ── EXP-49 specific: Remove group access, set expiry, revert ──
 
-      logger.step(`Step 18: Remove group-level access for "${groupName}"`);
+      logger.step(
+        `Step 18: Remove group-level access for "${groupName}"`,
+      );
       await helpers.removeGroupAccessAndSave(groupName);
 
-      logger.step(`Step 19: Set expiry date for "${siteName}" and save`);
+      logger.step(
+        `Step 19: Set expiry date for "${siteName}" and save`,
+      );
       await helpers.openSiteAccessInEditMode();
-      await administrationUserPage.editAccessExpirationDateCell(siteName);
+      await administrationUserPage
+        .editAccessExpirationDateCell(siteName);
       await administrationUserPage.openExpirationDateCalendar();
       await administrationUserPage.clickTodayInCalendar();
       await helpers.saveAndWaitForSuccess();
 
       // ── Site Group Change Flow ──
-      logger.step('Step 20-23: Navigate to Site List and revert groups');
-      await helpers.navigateToSiteAndChangeGroups(siteName, originalGroups);
+      logger.step(
+        'Step 20-23: Navigate to Site List and revert groups',
+      );
+      await helpers.navigateToSiteAndChangeGroups(
+        siteName, originalGroups,
+      );
 
       logger.step('Step 24: Save and verify no confirmation popup');
-      await administrationUserPage.saveSiteAndVerifyNoConfirmationPopup(successMessage);
-      isSiteGroupsReverted = true;
+      await administrationUserPage
+        .saveSiteAndVerifyNoConfirmationPopup(successMessage);
+      haveSiteGroupsBeenReverted = true;
 
       // ── Post-save User Verification ──
-      logger.step('Step 25-26: Navigate back and open user site access');
+      logger.step(
+        'Step 25-26: Navigate back and open user site access',
+      );
       await helpers.navigateBackAndOpenUserSiteAccess(userName);
 
-      logger.step(`Step 27: Verify Access Expiration is not empty for "${siteName}"`);
-      await administrationUserPage.verifyAccessExpirationDateIsNotEmpty(siteName);
+      logger.step(
+        `Step 27: Verify Access Expiration is not empty for "${siteName}"`,
+      );
+      await administrationUserPage
+        .verifyAccessExpirationDateIsNotEmpty(siteName);
 
-      logger.step(`Step 28: Verify Access Status is not empty for "${siteName}"`);
-      await administrationUserPage.verifyAccessStatusIsNotEmpty(siteName);
+      logger.step(
+        `Step 28: Verify Access Status is not empty for "${siteName}"`,
+      );
+      await administrationUserPage
+        .verifyAccessStatusIsNotEmpty(siteName);
 
       // ── Cleanup: Remove site-level access ──
-      logger.step(`Step 29: Cleanup — remove site access for "${siteName}"`);
+      logger.step(
+        `Step 29: Cleanup — remove site access for "${siteName}"`,
+      );
       await administrationUserPage.removeAccessForSite(siteName);
       await administrationUserPage.clickSaveButton();
       await administrationUserPage.waitForSuccessMessage();
-      isUserAccessCleaned = true;
+      hasUserAccessBeenCleaned = true;
 
       logger.testEnd(testName, 'PASSED');
     } catch (error) {
       logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
-      if (!isUserAccessCleaned) {
-        await helpers.safeCleanupUserAccess(groupName, siteName);
-      }
-      if (!isSiteGroupsReverted) {
-        await helpers.safeRevertSiteGroups(siteName, originalGroups);
-      }
+      await safeCleanupAll({
+        groupName, siteName, originalGroups,
+        hasUserAccessBeenCleaned, haveSiteGroupsBeenReverted,
+      });
     }
   });
 
   test('ADMIN-USR-ACC-EXP-50 - Verify no confirmation message when assigning a site with an expiry date to a group after removing site access', async () => {
-    // Extend timeout — EXP-48 shared setup + site group revert
-    test.setTimeout(420000);
+    test.setTimeout(EXTENDED_TEST_TIMEOUT);
 
     const testName = test.info().title;
     logger.testStart(testName);
@@ -329,10 +376,11 @@ test.describe('Admin User Mgmt Group Level Access', () => {
       userName, siteName, groupName, successMessage, siteGroups,
     } = groupLevelAccess50;
 
-    const originalGroups = AdminUserTestHelpers.buildOriginalGroups(siteGroups);
+    const originalGroups =
+      AdminUserTestHelpers.buildOriginalGroups(siteGroups);
 
-    let isUserAccessCleaned = false;
-    let isSiteGroupsReverted = false;
+    let hasUserAccessBeenCleaned = false;
+    let haveSiteGroupsBeenReverted = false;
 
     try {
       // ── Shared setup: Steps 1-17 ──
@@ -340,38 +388,45 @@ test.describe('Admin User Mgmt Group Level Access', () => {
 
       // ── EXP-50 specific: Remove site access, revert site groups ──
 
-      logger.step(`Step 18: Remove site-level access for "${siteName}"`);
+      logger.step(
+        `Step 18: Remove site-level access for "${siteName}"`,
+      );
       await administrationUserPage.removeAccessForSite(siteName);
       await helpers.saveAndWaitForSuccess();
 
       // ── Site Group Change Flow ──
-      logger.step('Step 19-22: Navigate to Site List and revert groups');
-      await helpers.navigateToSiteAndChangeGroups(siteName, originalGroups);
+      logger.step(
+        'Step 19-22: Navigate to Site List and revert groups',
+      );
+      await helpers.navigateToSiteAndChangeGroups(
+        siteName, originalGroups,
+      );
 
       logger.step('Step 23: Save and verify no confirmation popup');
-      await administrationUserPage.saveSiteAndVerifyNoConfirmationPopup(successMessage);
-      isSiteGroupsReverted = true;
+      await administrationUserPage
+        .saveSiteAndVerifyNoConfirmationPopup(successMessage);
+      haveSiteGroupsBeenReverted = true;
 
       // ── Post-save: Navigate back to Users List ──
       logger.step('Step 24: Navigate back to Users List');
       await helpers.navigateBackToUsersList();
 
       // ── Cleanup: Remove group-level access ──
-      logger.step(`Step 25: Cleanup — remove group access for "${groupName}"`);
+      logger.step(
+        `Step 25: Cleanup — remove group access for "${groupName}"`,
+      );
       await helpers.findUserAndCleanupGroupAccess(userName, groupName);
-      isUserAccessCleaned = true;
+      hasUserAccessBeenCleaned = true;
 
       logger.testEnd(testName, 'PASSED');
     } catch (error) {
       logger.testEnd(testName, 'FAILED');
       throw error;
     } finally {
-      if (!isUserAccessCleaned) {
-        await helpers.safeCleanupUserAccess(groupName, siteName);
-      }
-      if (!isSiteGroupsReverted) {
-        await helpers.safeRevertSiteGroups(siteName, originalGroups);
-      }
+      await safeCleanupAll({
+        groupName, siteName, originalGroups,
+        hasUserAccessBeenCleaned, haveSiteGroupsBeenReverted,
+      });
     }
   });
 });
