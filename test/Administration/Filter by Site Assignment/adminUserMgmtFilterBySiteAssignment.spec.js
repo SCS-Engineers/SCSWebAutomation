@@ -11,8 +11,6 @@ const testData = require('../../../data/testData.json');
 test.describe('Admin User Mgmt Filter by Site Assignment', () => {
   /** Short timeout for grid row checks that may legitimately be empty */
   const SHORT_GRID_TIMEOUT = 5000;
-  /** Delay after programmatic dialog dismissal */
-  const DIALOG_DISMISS_DELAY = 500;
   /** Max retry attempts for cleanup operations */
   const MAX_CLEANUP_RETRIES = 3;
 
@@ -358,15 +356,7 @@ test.describe('Admin User Mgmt Filter by Site Assignment', () => {
    * @returns {Promise<void>}
    */
   const dismissAllDialogs = async () => {
-    try {
-      await administrationUserPage.page.evaluate(() => {
-        document.querySelectorAll('.e-dlg-overlay').forEach((el) => el.remove());
-        document.querySelectorAll('.e-dlg-container').forEach((el) => el.remove());
-      });
-      await administrationUserPage.page.waitForTimeout(DIALOG_DISMISS_DELAY);
-    } catch (error) {
-      logger.info(`Dialog dismissal skipped: ${error.message}`);
-    }
+    await administrationUserPage.dismissAllDialogs();
   };
 
   test('ADMIN-FILTR-BY-SITE-ASGN-01 - Verify functionality when "Assigned to selected site" checkbox is not selected', async () => {

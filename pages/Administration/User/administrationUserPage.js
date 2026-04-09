@@ -221,6 +221,14 @@ class AdministrationUserPage extends BasePage {
   }
 
   /**
+   * Dismiss all open EJ2 dialogs and overlays via DOM manipulation
+   * @returns {Promise<void>}
+   */
+  async dismissAllDialogs() {
+    return this.gridWaitOps.dismissAllDialogs();
+  }
+
+  /**
    * Wait for permission column headers to load (Report View, Document View)
    * @returns {Promise<void>}
    */
@@ -269,12 +277,17 @@ class AdministrationUserPage extends BasePage {
     await radioButton.waitFor({ state: 'visible', timeout: 10000 });
     await radioButton.click();
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(TIMEOUTS.FILTER_DELAY);
+    // Wait for grid to render after radio button change
+    await this.page.locator('.e-grid .e-row').first()
+      .waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
 
     // Wait for data to load in Site List
     this.logger.info('Waiting for Site List data to load...');
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(TIMEOUTS.FILTER_DELAY);
+    // Wait for spinner to disappear
+    await this.page.locator('.e-spinner-pane').waitFor(
+      { state: 'hidden', timeout: 5000 },
+    ).catch(() => {});
 
     // Scroll the grid header and content to left to see Site List column
     this.logger.info('Scrolling site grid to left to see Site List column');
@@ -293,7 +306,8 @@ class AdministrationUserPage extends BasePage {
         lastContent.scrollLeft = 0;
       }
     });
-    await this.page.waitForTimeout(TIMEOUTS.SHORT_POLL_INTERVAL);
+    // Wait for scroll to take effect
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
 
     // Drag the resize handler down to expand the site grid area
     const resizeHandler = this.page.locator('.e-resize-handler.e-icons').first();
@@ -307,7 +321,8 @@ class AdministrationUserPage extends BasePage {
         await this.page.mouse.down();
         await this.page.mouse.move(box.x + box.width / 2, box.y + 300);
         await this.page.mouse.up();
-        await this.page.waitForTimeout(TIMEOUTS.FILTER_DELAY);
+        // Wait for layout to settle after resize
+        await this.page.waitForLoadState('domcontentloaded').catch(() => {});
         this.logger.info('✓ Expanded site grid area by dragging resize handler');
       }
     }
@@ -318,7 +333,9 @@ class AdministrationUserPage extends BasePage {
     const isEditButtonVisible = await editButton.isVisible().catch(() => false);
     if (isEditButtonVisible) {
       await editButton.click();
-      await this.page.waitForTimeout(TIMEOUTS.SHORT_POLL_INTERVAL);
+      // Wait for edit mode to activate
+      await this.page.locator(LOCATORS.saveButton).first()
+        .waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
       this.logger.info('✓ Edit button clicked');
     }
 
@@ -517,8 +534,6 @@ class AdministrationUserPage extends BasePage {
     this.logger.action('Verifying "Show sites with access granted" is selected');
 
     // Wait for the system to auto-select the radio button after saving
-    await this.page.waitForTimeout(TIMEOUTS.GRID_STABILIZATION);
-
     const radioButton = this.page.locator(LOCATORS.showSitesWithAccessRadio).first();
     await radioButton.waitFor({ state: 'visible', timeout: 10000 });
 
@@ -602,7 +617,6 @@ class AdministrationUserPage extends BasePage {
     ).catch(() => {
       this.logger.warn('Checkbox did not become enabled in time, will attempt to click anyway');
     });
-    await this.page.waitForTimeout(TIMEOUTS.FILTER_DELAY); // Additional wait for stability
 
     // Check if checked
     const isChecked = await inputCheckbox.isChecked().catch(() => false);
@@ -610,9 +624,7 @@ class AdministrationUserPage extends BasePage {
     if (isChecked) {
       // Click the input checkbox to uncheck
       await inputCheckbox.click();
-      await this.page.waitForTimeout(TIMEOUTS.FILTER_DELAY);
-
-      // Wait for checkbox to become unchecked (verify the state change)
+      // Wait for checkbox state change
       await this.page.waitForFunction(
         (checkboxSelector) => {
           const label = document.querySelector(checkboxSelector);
@@ -646,7 +658,9 @@ class AdministrationUserPage extends BasePage {
     this.logger.action('Disabling "Show permission columns" with retry logic');
 
     // Wait for checkbox to be fully ready
-    await this.page.waitForTimeout(TIMEOUTS.GRID_STABILIZATION);
+    await this.page.locator('label:has-text("Show permission columns")').first()
+      .waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
     // Check if checkbox is disabled
     const checkboxInput = this.page.locator('label:has-text("Show permission columns")').locator('input[type="checkbox"]');
@@ -657,7 +671,8 @@ class AdministrationUserPage extends BasePage {
 
       // Click Cancel button to exit edit mode
       await this.page.locator('button.e-btn.e-small.scs-inline-right.e-info:has-text("Cancel")').click();
-      await this.page.waitForTimeout(TIMEOUTS.FILTER_DELAY);
+      // Wait for cancel to take effect
+      await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
       this.logger.info('✓ Clicked Cancel button');
 
       // Click Edit button again
@@ -666,7 +681,10 @@ class AdministrationUserPage extends BasePage {
 
       // Wait for SITE ACCESS AND PERMISSIONS section to reload
       await this.waitForSiteAccessGridToLoad();
-      await this.page.waitForTimeout(TIMEOUTS.GRID_STABILIZATION);
+      // Wait for spinner to disappear
+      await this.page.locator('.e-spinner-pane').waitFor(
+        { state: 'hidden', timeout: 5000 },
+      ).catch(() => {});
       this.logger.info('✓ Site Access grid reloaded and ready');
     } else {
       this.logger.info('✓ Checkbox is enabled, proceeding with disabling columns');
@@ -1080,17 +1098,18 @@ class AdministrationUserPage extends BasePage {
 
     if (!isSelected) {
       await this.page.locator(LOCATORS.showSitesWithAccessRadio).first().click();
-      await this.page.waitForTimeout(TIMEOUTS.CHECKBOX_READY);
-
-      // Wait for grid to reload by checking for loading indicator to appear and disappear
-      await this.page.waitForTimeout(TIMEOUTS.FILTER_DELAY);
-
-      // Wait for grid content to stabilize
+      // Wait for grid to reload after radio change
       await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {
         this.logger.info('Network idle timeout - continuing anyway');
       });
 
-      await this.page.waitForTimeout(TIMEOUTS.CHECKBOX_READY);
+      // Wait for grid rows to appear
+      await this.page.locator('.e-grid .e-row').first()
+        .waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+      // Wait for spinner to disappear
+      await this.page.locator('.e-spinner-pane').waitFor(
+        { state: 'hidden', timeout: 5000 },
+      ).catch(() => {});
       this.logger.info('✓ Selected "Show sites with access granted" radio button and waited for grid reload');
     } else {
       this.logger.info('✓ "Show sites with access granted" already selected');

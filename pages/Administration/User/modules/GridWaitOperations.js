@@ -198,7 +198,11 @@ class GridWaitOperations {
   async waitForGridRowsWithStabilization(initialWait = 30000, stabilizationWait = 3000) {
     this.logger.action('Waiting for grid rows to be visible and stabilize');
     await this.page.locator('.e-grid .e-row').first().waitFor({ state: 'visible', timeout: initialWait });
-    await this.page.waitForTimeout(stabilizationWait);
+    // Wait for spinner to disappear instead of static wait
+    await this.page.locator('.e-spinner-pane').waitFor(
+      { state: 'hidden', timeout: stabilizationWait },
+    ).catch(() => {});
+    await this.page.waitForLoadState('networkidle', { timeout: stabilizationWait }).catch(() => {});
     this.logger.info('✓ Grid rows are visible and stabilized');
   }
 
@@ -238,8 +242,8 @@ class GridWaitOperations {
       this.logger.debug('Grid rows not immediately visible');
     });
 
-    // Add small buffer for UI rendering
-    await this.page.waitForTimeout(1000);
+    // Wait for network to settle after grid renders
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
 
     this.logger.info('✓ Grid fully stabilized');
   }
@@ -252,9 +256,9 @@ class GridWaitOperations {
   async pressEscape(waitAfter = 1000) {
     this.logger.action('Pressing Escape key');
     await this.page.keyboard.press('Escape');
-    if (waitAfter > 0) {
-      await this.page.waitForTimeout(waitAfter);
-    }
+    // Wait for modal/dialog/popup to be hidden after Escape
+    await this.page.locator('.e-popup-open, .e-dialog, .e-dlg-overlay').first()
+      .waitFor({ state: 'hidden', timeout: waitAfter }).catch(() => {});
     this.logger.info('✓ Escape key pressed');
   }
 
@@ -266,6 +270,29 @@ class GridWaitOperations {
     this.logger.action('Waiting for DOM content to be loaded');
     await this.page.waitForLoadState('domcontentloaded');
     this.logger.info('✓ DOM content loaded');
+  }
+
+  /**
+   * Dismiss all open EJ2 dialogs and overlays via DOM manipulation.
+   * Useful in finally blocks when Escape key cannot close modal dialogs.
+   * @returns {Promise<void>}
+   */
+  async dismissAllDialogs() {
+    this.logger.action('Dismissing all open EJ2 dialogs and overlays');
+    try {
+      await this.page.evaluate(() => {
+        document.querySelectorAll('.e-dlg-overlay')
+          .forEach((el) => el.remove());
+        document.querySelectorAll('.e-dlg-container')
+          .forEach((el) => el.remove());
+      });
+      // Wait for dialog overlays to be removed from DOM
+      await this.page.locator('.e-dlg-overlay').first()
+        .waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+      this.logger.info('✓ All dialogs dismissed');
+    } catch (error) {
+      this.logger.info(`Dialog dismissal skipped: ${error.message}`);
+    }
   }
 
   /**

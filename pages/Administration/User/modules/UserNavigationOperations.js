@@ -67,7 +67,9 @@ class UserNavigationOperations extends BasePage {
 
     if (!isExpanded) {
       await header.click();
-      await this.page.waitForTimeout(1000);
+      // Wait for section content to become visible
+      await this.page.locator('.e-grid, .e-gridcontent').first()
+        .waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     }
 
     this.logger.info('✓ SITE ACCESS AND PERMISSIONS section opened');
@@ -92,7 +94,9 @@ class UserNavigationOperations extends BasePage {
 
         if (!isExpanded) {
           await header.click();
-          await this.page.waitForTimeout(1000);
+          // Wait for group access content to become visible
+          await this.page.locator('.e-grid .e-row, .e-gridcontent').first()
+            .waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
           this.logger.info('✓ GROUP ACCESS AND PERMISSIONS section expanded by clicking header');
         } else {
           this.logger.info('✓ GROUP ACCESS AND PERMISSIONS section already expanded');
@@ -124,7 +128,8 @@ class UserNavigationOperations extends BasePage {
         await this.page.mouse.down();
         await this.page.mouse.move(box.x + box.width / 2, box.y + pixels);
         await this.page.mouse.up();
-        await this.page.waitForTimeout(1000);
+        // Wait for layout to settle after resize
+        await this.page.waitForLoadState('domcontentloaded').catch(() => {});
         this.logger.info('✓ Dragged resize handler down to expand user list section');
       }
     } else {
@@ -166,7 +171,9 @@ class UserNavigationOperations extends BasePage {
     await listButton.waitFor({ state: 'visible', timeout: 10000 });
     await listButton.click();
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1000);
+    // Wait for site list grid to render
+    await this.page.locator('.e-grid .e-row').first()
+      .waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
     this.logger.info('✓ Clicked List in Sites section');
   }
 
@@ -186,7 +193,8 @@ class UserNavigationOperations extends BasePage {
     // Wait for the site list grid rows to be visible
     await this.page.locator('.e-grid .e-row').first()
       .waitFor({ state: 'visible', timeout: 30000 });
-    await this.page.waitForTimeout(1000);
+    // Wait for grid to be interactive after filter is ready
+    await this.page.waitForLoadState('networkidle').catch(() => {});
 
     // Use EJ2 Grid API to filter the "Name" column directly.
     // This is more reliable than clicking the Excel filter icon.
@@ -215,7 +223,9 @@ class UserNavigationOperations extends BasePage {
     }
 
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1500);
+    // Wait for filtered row to appear in the grid
+    await this.page.locator('.e-grid .e-row').first()
+      .waitFor({ state: 'visible', timeout: 15000 });
 
     // Select the first filtered row via EJ2 Grid API to avoid
     // click-interception by the <app-sites> component wrapper.
@@ -227,7 +237,9 @@ class UserNavigationOperations extends BasePage {
       }
     });
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1000);
+    // Wait for row selection to take effect
+    await this.page.locator('.e-row.e-selectionbackground').first()
+      .waitFor({ state: 'attached', timeout: 10000 }).catch(() => {});
 
     this.logger.info(`✓ Filtered Site List by: ${siteName}`);
   }
@@ -249,7 +261,13 @@ class UserNavigationOperations extends BasePage {
     // Dispatch a native click event to bypass <app-sites> interception
     await editButton.evaluate((btn) => btn.click());
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(2000);
+    // Wait for edit mode to activate by checking for Region dropdown
+    await this.page.waitForFunction(() => {
+      const dd = document.querySelector(
+        'ejs-dropdownlist[data-qa="admin-site-regional-dd"]',
+      );
+      return dd && dd.ej2_instances && dd.ej2_instances[0];
+    }, { timeout: 15000 }).catch(() => {});
 
     // Verify that the form actually entered edit mode by checking
     // that the Region dropdown's EJ2 instance exists and is enabled.
@@ -265,7 +283,13 @@ class UserNavigationOperations extends BasePage {
       this.logger.info('Edit mode not detected — retrying click');
       await editButton.evaluate((btn) => btn.click());
       await this.page.waitForLoadState('networkidle');
-      await this.page.waitForTimeout(2000);
+      // Wait for edit mode on retry
+      await this.page.waitForFunction(() => {
+        const dd = document.querySelector(
+          'ejs-dropdownlist[data-qa="admin-site-regional-dd"]',
+        );
+        return dd && dd.ej2_instances && dd.ej2_instances[0];
+      }, { timeout: 15000 }).catch(() => {});
     }
 
     this.logger.info('✓ Clicked EDIT on site information');
@@ -301,7 +325,8 @@ class UserNavigationOperations extends BasePage {
 
     // Wait for any cascading dropdown reload from a prior change.
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(2000);
+    // Wait for the target dropdown to be enabled (cascading loads may
+    // temporarily disable dependent dropdowns).
 
     const selector = `ejs-dropdownlist[data-qa="${dataQa}"]`;
 
@@ -342,8 +367,6 @@ class UserNavigationOperations extends BasePage {
       await icon.click();
     }
 
-    await this.page.waitForTimeout(500);
-
     // Wait for the popup with list items to appear.
     const popup = this.page.locator('.e-popup.e-popup-open').last();
     await popup.waitFor({ state: 'visible', timeout: 10000 });
@@ -356,7 +379,6 @@ class UserNavigationOperations extends BasePage {
     await option.click();
 
     // Allow cascade effect (dependent dropdowns reload).
-    await this.page.waitForTimeout(2000);
     await this.page.waitForLoadState('networkidle');
 
     this.logger.info(`✓ Changed "${label}" to "${value}"`);
@@ -378,7 +400,10 @@ class UserNavigationOperations extends BasePage {
     // so we use evaluate to dispatch a click directly on the button.
     await saveButton.evaluate((btn) => btn.click());
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1000);
+    // Wait for spinner to disappear after save
+    await this.page.locator('.e-spinner-pane').waitFor(
+      { state: 'hidden', timeout: 10000 },
+    ).catch(() => {});
     this.logger.info('✓ Save button clicked on site form');
   }
 

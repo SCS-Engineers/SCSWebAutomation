@@ -14,7 +14,10 @@ class SaveOperations extends BasePage {
     this.logger.action('Clicking Save button');
     await this.page.locator(LOCATORS.saveButton).first().click();
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1000);
+    // Wait for spinner to disappear after save action
+    await this.page.locator('.e-spinner-pane').waitFor(
+      { state: 'hidden', timeout: 10000 },
+    ).catch(() => {});
     this.logger.info('✓ Save button clicked');
   }
 
@@ -69,10 +72,10 @@ class SaveOperations extends BasePage {
       await dialog.accept();
     });
 
-    // Wait for dialog to appear
+    // Wait for dialog to appear using Playwright's event listener
     const startTime = Date.now();
     while (!dialogAppeared && (Date.now() - startTime) < timeout) {
-      await this.page.waitForTimeout(100);
+      await this.page.waitForEvent('dialog', { timeout: 500 }).catch(() => {});
     }
 
     if (!dialogAppeared) {
